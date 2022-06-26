@@ -1,10 +1,3 @@
-/**
- *Submitted for verification at FtmScan.com on 2021-11-26
-*/
-
-/**
- *Submitted for verification at FtmScan.com on 2021-09-10
-*/
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.0;
@@ -2207,7 +2200,7 @@ pragma solidity ^0.8.0;
  *
  * Expect the amount of LP tokens you have to grow over time while you have assets deposit
  */
-contract ReaperAutoCompoundBeethoven_fBEETS is Ownable, Pausable {
+contract CeazoreAutoCompoundBeethoven_fBEETS is Ownable, Pausable {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -2263,8 +2256,8 @@ contract ReaperAutoCompoundBeethoven_fBEETS is Ownable, Pausable {
     uint256 public constant ONE_YEAR = 365 days;
 
     /**
-     * @dev Reaper Contracts:
-     * {treasury} - Address of the Reaper treasury
+     * @dev Ceazor Contracts:
+     * {treasury} - Address of the Ceazor treasury
      * {vault} - Address of the vault that controls the strategy's funds.
      */
     address public treasury;
@@ -2292,7 +2285,7 @@ contract ReaperAutoCompoundBeethoven_fBEETS is Ownable, Pausable {
     uint public treasuryFee = 9000;
     uint256 public strategistFee = 2500;
     uint public securityFee = 10;
-    uint public totalFee = 450;
+    uint public totalFee = 100;
     uint constant public MAX_FEE = 500;
     uint256 public constant STRATEGIST_MAX_FEE = 5000;
     uint constant  public PERCENT_DIVISOR = 10000;

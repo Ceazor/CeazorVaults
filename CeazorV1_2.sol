@@ -1,7 +1,3 @@
-/**
- *Submitted for verification at FtmScan.com on 2021-10-23
-*/
-
 // SPDX-License-Identifier: MIT
 // File: @openzeppelin/contracts/GSN/Context.sol
 
@@ -1000,7 +996,7 @@ contract CeazorVaultv1_2 is ERC20, Ownable, ReentrancyGuard {
 
     /**
      * @dev Sets the value of {token} to the token that the vault will
-     * hold as underlying value. It initializes the vault's own 'moo' token.
+     * hold as underlying value. It initializes the vault's own 'ceazor' token.
      * This token is minted when someone does a deposit. It is burned in order
      * to withdraw the corresponding portion of the underlying assets.
      * @param _token the token to maximize.
