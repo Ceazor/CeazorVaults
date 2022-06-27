@@ -961,22 +961,7 @@ contract CeazorVaultv1_2 is ERC20, Ownable, ReentrancyGuard {
 
     /**
      * + WEBSITE DISCLAIMER +
-     * While we have taken precautionary measures to protect our users,
-     * it is imperative that you read, understand and agree to the disclaimer below:
-     *
-     * Using our platform may involve financial risk of loss.
-     * Never invest more than what you can afford to lose.
-     * Never invest in a Reaper Vault with tokens you don't trust.
-     * Never invest in a Reaper Vault with tokens whose rules for minting you don’t agree with.
-     * Ensure the accuracy of the contracts for the tokens in the Reaper Vault.
-     * Ensure the accuracy of the contracts for the Reaper Vault and Strategy you are depositing in.
-     * Check our documentation regularly for additional disclaimers and security assessments.
-     * ...and of course: DO YOUR OWN RESEARCH!!!
-     *
-     * By accepting these terms, you agree that Byte Masons, Fantom.Farm, or any parties
-     * affiliated with the deployment and management of these vaults or their attached strategies
-     * are not liable for any financial losses you might incur as a direct or indirect
-     * result of investing in any of the pools on the platform.
+     * Im not a dev, don't put your tokens in here!.
      */
     mapping (address => bool) public hasReadAndAcceptedTerms;
 

@@ -2200,7 +2200,7 @@ pragma solidity ^0.8.0;
  *
  * Expect the amount of LP tokens you have to grow over time while you have assets deposit
  */
-contract CeazoreAutoCompoundBeethoven_fBEETS is Ownable, Pausable {
+contract CeazorAutoCompoundBeethoven_fBEETS is Ownable, Pausable {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
