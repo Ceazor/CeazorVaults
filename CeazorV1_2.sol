@@ -957,7 +957,7 @@ contract CeazorVaultv1_2 is ERC20, Ownable, ReentrancyGuard {
     // The token the vault accepts and looks to maximize.
     IERC20 public token;
     // The minimum time it has to pass before a strat candidate can be approved.
-    uint256 public immutable approvalDelay;
+    uint256 public approvalDelay;
 
     /**
      * + WEBSITE DISCLAIMER +
