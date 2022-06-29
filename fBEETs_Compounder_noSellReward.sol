@@ -2432,31 +2432,32 @@ contract CeazorAutoCompoundBeethoven_fBEETS is Ownable, Pausable {
      * @dev Takes out fees from the rewards. Set by constructor
      * callFeeToUser is set as a percentage of the fee,
      * as is treasuryFeeToVault
+     * 🥪🥪🥪 Ceazor modified the following to stop the selling of Beets to pay fees
      */
     function _chargeFees(bool _remitStrategist) internal {
         uint256 rewardBal = IERC20(rewardToken).balanceOf(address(this));
-        uint256 wftmBal = IERC20(wftm).balanceOf(address(this));
+        // uint256 wftmBal = IERC20(wftm).balanceOf(address(this));
 
         uint256 fees;
-        uint256 wftmFees;
+        uint256 callFees;
 
         
 
         fees = rewardBal.mul(totalFee).div(PERCENT_DIVISOR);
-        _swap(rewardToken, wftm, wftmRoute_ID, fees);
-        wftmFees = IERC20(wftm).balanceOf(address(this)).sub(wftmBal);
+        // _swap(rewardToken, wftm, wftmRoute_ID, fees);
+        callFees = IERC20(rewardToken).balanceOf(address(this)).sub(rewardBal);
 
-        uint256 callFeeToUser = wftmFees.mul(callFee).div(PERCENT_DIVISOR);
+        uint256 callFeeToUser = callFees.mul(callFee).div(PERCENT_DIVISOR);
         IERC20(wftm).safeTransfer(msg.sender, callFeeToUser);
 
 
-        uint256 treasuryFeeToVault = wftmFees.mul(treasuryFee).div(PERCENT_DIVISOR);
+        uint256 treasuryFeeToVault = callFees.mul(treasuryFee).div(PERCENT_DIVISOR);
         if (_remitStrategist) {
             uint256 feeToStrategist = treasuryFeeToVault.mul(strategistFee).div(PERCENT_DIVISOR);
             treasuryFeeToVault = treasuryFeeToVault.sub(feeToStrategist);
-            IERC20(wftm).safeTransfer(strategistRemitter, feeToStrategist);
+            IERC20(rewardToken).safeTransfer(strategistRemitter, feeToStrategist);
         }
-        IERC20(wftm).safeTransfer(treasury, treasuryFeeToVault);
+        IERC20(rewardToken).safeTransfer(treasury, treasuryFeeToVault);
 
     }
 
