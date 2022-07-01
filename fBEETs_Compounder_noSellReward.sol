@@ -2318,7 +2318,7 @@ contract CeazorAutoCompoundBeethoven_fBEETS is Ownable, Pausable {
       address _vault,
       address _treasury,
       address _strategistRemitter
-    ) public {
+    ) {
         lpToken = _lpToken;
         poolId = _poolId;
         poolID_bytes = wftmRoute_ID;
