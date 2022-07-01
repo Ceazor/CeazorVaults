@@ -7,11 +7,11 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-import "../interfaces/beethovenx/IBeethovenxChef.sol";
-import "../interfaces/beethovenx/IBalancerVault.sol";
-import "../interfaces/beethovenx/IBeetRewarder.sol";
-import "../strategies/Common/StratManager.sol";
-import "../strategies/Common/FeeManager.sol";
+import "../interfaces/IBeethovenxChef.sol";
+import "../interfaces/IBalancerVault.sol";
+import "../interfaces/IBeetRewarder.sol";
+import "../strategies/StratManager.sol";
+import "../strategies/FeeManager.sol";
 
 contract StrategyBeethovenxDual is StratManager, FeeManager {
     using SafeERC20 for IERC20;
