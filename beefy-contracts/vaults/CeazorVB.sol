@@ -12,6 +12,7 @@ import "../../openzepplin/Address.sol";
 import "../../openzepplin/SafeERC20.sol";
 import "../../openzepplin/Ownable.sol";
 import "../../openzepplin/ReentrancyGuard.sol";
+import "../interfaces/IStrategy.sol";
 
 
 
@@ -22,7 +23,7 @@ pragma solidity ^0.8.0;
  * This is the contract that receives funds and that users interface with.
  * The yield optimizing strategy itself is implemented in a separate 'Strategy.sol' contract.
  */
-contract CeazorVaultB is ERC20, Ownable, ReentrancyGuard {
+contract CeazorVaultB6 is ERC20, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -43,7 +44,7 @@ contract CeazorVaultB is ERC20, Ownable, ReentrancyGuard {
 
     /**
      * @dev Sets the value of {token} to the token that the vault will
-     * hold as underlying value. It initializes the vault's own 'moo' token.
+     * hold as underlying value. It initializes the vault's own 'ceaz' token.
      * This token is minted when someone does a deposit. It is burned in order
      * to withdraw the corresponding portion of the underlying assets.
      * @param _strategy the address of the strategy.
