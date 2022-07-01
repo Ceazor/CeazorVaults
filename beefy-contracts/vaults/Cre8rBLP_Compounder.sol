@@ -54,8 +54,8 @@ contract StrategyBeethovenxDual is StratManager, FeeManager {
         address _unirouter,         // 0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce - vault ?beets swap?
         // address _keeper,
         address _strategist,        // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor
-        address _FeeRecipient  // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor for now will be xCheese
-    ) StratManager( _strategist, _unirouter, _vault, _FeeRecipient) public {  //removed keeper
+        address _perFeeRecipient  // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor for now will be xCheese
+    ) StratManager( _strategist, _unirouter, _vault, _perFeeRecipient) public {  //removed keeper
         wantPoolId = _balancerPoolIds[0];
         nativeSwapPoolId = _balancerPoolIds[1];
         inputSwapPoolId = _balancerPoolIds[2];
@@ -131,8 +131,8 @@ contract StrategyBeethovenxDual is StratManager, FeeManager {
     // compounds earnings and charges performance fee
     function _harvest(address callFeeRecipient) internal whenNotPaused {
         IBeethovenxChef(chef).harvest(chefPoolId, address(this));
-        uint256 outputBal = IERC20(output).balanceOf(address(this));
-        uint256 rewardBal = IERC20(reward).balanceOf(address(this));
+        uint256 outputBal = IERC20(output).balanceOf(address(this));   // beets harvest
+        uint256 rewardBal = IERC20(reward).balanceOf(address(this));   // cre8r harvest
         if (outputBal > 0 || rewardBal > 0) {
             chargeFees(callFeeRecipient);
             addLiquidity();
@@ -148,24 +148,30 @@ contract StrategyBeethovenxDual is StratManager, FeeManager {
     function chargeFees(address callFeeRecipient) internal {
         uint256 outputBal = IERC20(output).balanceOf(address(this));
         if (outputBal > 0) {
-            balancerSwap(nativeSwapPoolId, output, native, outputBal);
+            balancerSwap(nativeSwapPoolId, output, native, outputBal);  // swaps all the beets for wftm
         }
 
         uint256 rewardBal = IERC20(reward).balanceOf(address(this));
         if (rewardBal > 0) {
-            balancerSwap(rewardSwapPoolId, reward, native, rewardBal);
+            balancerSwap(rewardSwapPoolId, reward, native, rewardBal);  //swaps all the cre8r for wftm
         }
 
-        uint256 nativeBal = IERC20(native).balanceOf(address(this)).mul(45).div(1000);
+        uint256 nativeBal = IERC20(native).balanceOf(address(this)).mul(45).div(1000); //assigns balance of wftm
 
-        uint256 callFeeAmount = nativeBal.mul(callFee).div(MAX_FEE);
-        IERC20(native).safeTransfer(callFeeRecipient, callFeeAmount);
+        uint256 callFeeAmount = nativeBal.mul(callFee).div(MAX_FEE); 
+        IERC20(native).safeTransfer(callperFeeRecipient, callFeeAmount); //calcs callfee and transfers
 
         uint256 perFeeAmount = nativeBal.mul(perFee).div(MAX_FEE);
-        IERC20(native).safeTransfer(perFeeRecipient, perFeeAmount);
+        IERC20(native).safeTransfer(perFeeRecipient, perFeeAmount);  //calcs perFee and transfers
 
         uint256 strategistFee = nativeBal.mul(STRATEGIST_FEE).div(MAX_FEE);
-        IERC20(native).safeTransfer(strategist, strategistFee);
+        IERC20(native).safeTransfer(strategist, strategistFee);      // calcs strategist fee and transfers
+
+        uint256 forXCheese = IERC20(native).balanceOf(address(this));
+        if (forXCheese > 0) {
+            balancerSwap(nativeSwapPoolId, output, native, (forXCheese).div(2));    // swaps half the remaining wtfm for Beets 
+            IERC20(native).safeTransfer(xCheeseRecipient, forXCheese);              // and send them to xCheese
+        }
     }
 
     // Adds liquidity to AMM and gets more LP tokens.

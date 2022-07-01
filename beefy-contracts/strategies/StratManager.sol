@@ -17,7 +17,8 @@ contract StratManager is Ownable, Pausable {
     address public strategist;
     address public unirouter;
     address public vault;
-    address public beefyFeeRecipient;
+    address public perFeeRecipient;
+    address public xCheeseRecipient;
 
     /**
      * @dev Initializes the base strategy.
@@ -25,20 +26,23 @@ contract StratManager is Ownable, Pausable {
      * @param _strategist address where strategist fees go.
      * @param _unirouter router to use for swaps
      * @param _vault address of parent vault.
-     * @param _FeeRecipient address where to send Beefy's fees.
+     * @param _perFeeRecipient address where to send performance fees.
+     * @param _xCheeseRecipient address where the xtra rewards go for farms.
      */
     constructor(
         address _keeper,
         address _strategist,
         address _unirouter,
         address _vault,
-        address _FeeRecipient
+        address _perFeeRecipient,
+        address _xCheeseRecipient
     ) {
         keeper = _keeper;
         strategist = _strategist;
         unirouter = _unirouter;
         vault = _vault;
-        beefyFeeRecipient = _FeeRecipient;
+        perFeeRecipient = _perFeeRecipient;
+        xCheeseRecipient = _xCheeseRecipient;
     }
 
     // checks that caller is either owner or keeper.
@@ -82,10 +86,18 @@ contract StratManager is Ownable, Pausable {
 
     /**
      * @dev Updates fee recipient.
-     * @param _FeeRecipient new beefy fee recipient address.
+     * @param _perFeeRecipient new performance fee recipient address.
      */
-    function setBeefyFeeRecipient(address _FeeRecipient) external onlyOwner {
-        beefyFeeRecipient = _FeeRecipient;
+    function setperFeeRecipient(address _perFeeRecipient) external onlyOwner {
+        perFeeRecipient = _perFeeRecipient;
+    }
+
+        /**
+     * @dev Updates fee recipient.
+     * @param _xCheeseRecipient new performance fee recipient address.
+     */
+    function setxCheeseRecipient(address _xCheeseRecipient) external onlyOwner {
+        xCheeseRecipient = _xCheeseRecipient;
     }
 
     /**
