@@ -57,7 +57,7 @@ contract CeazorVaultB6 is ERC20, Ownable, ReentrancyGuard {
         string memory _name,
         string memory _symbol,
         uint256 _approvalDelay
-    ) public ERC20(
+    )  ERC20(
         _name,
         _symbol
     ) {

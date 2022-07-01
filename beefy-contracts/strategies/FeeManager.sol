@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.12;
+pragma solidity ^0.8.0;
 
 import "./StratManager.sol";
 
@@ -15,13 +15,13 @@ abstract contract FeeManager is StratManager {
     uint public withdrawalFee = 10;
 
     uint public callFee = 111;
-    uint public beefyFee = MAX_FEE - STRATEGIST_FEE - callFee;
+    uint public perFee = MAX_FEE - STRATEGIST_FEE - callFee;
 
     function setCallFee(uint256 _fee) public onlyManager {
         require(_fee <= MAX_CALL_FEE, "!cap");
         
         callFee = _fee;
-        beefyFee = MAX_FEE - STRATEGIST_FEE - callFee;
+        perFee = MAX_FEE - STRATEGIST_FEE - callFee;
     }
 
     function setWithdrawalFee(uint256 _fee) public onlyManager {

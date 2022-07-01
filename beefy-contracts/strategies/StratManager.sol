@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.12;
+pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Pausable.sol";
+import "../../openzepplin/Ownable.sol";
+import "../../openzepplin/Pauseable.sol";
 
 contract StratManager is Ownable, Pausable {
     /**
@@ -25,20 +25,20 @@ contract StratManager is Ownable, Pausable {
      * @param _strategist address where strategist fees go.
      * @param _unirouter router to use for swaps
      * @param _vault address of parent vault.
-     * @param _beefyFeeRecipient address where to send Beefy's fees.
+     * @param _FeeRecipient address where to send Beefy's fees.
      */
     constructor(
         address _keeper,
         address _strategist,
         address _unirouter,
         address _vault,
-        address _beefyFeeRecipient
-    ) public {
+        address _FeeRecipient
+    ) {
         keeper = _keeper;
         strategist = _strategist;
         unirouter = _unirouter;
         vault = _vault;
-        beefyFeeRecipient = _beefyFeeRecipient;
+        beefyFeeRecipient = _FeeRecipient;
     }
 
     // checks that caller is either owner or keeper.
@@ -81,11 +81,11 @@ contract StratManager is Ownable, Pausable {
     }
 
     /**
-     * @dev Updates beefy fee recipient.
-     * @param _beefyFeeRecipient new beefy fee recipient address.
+     * @dev Updates fee recipient.
+     * @param _FeeRecipient new beefy fee recipient address.
      */
-    function setBeefyFeeRecipient(address _beefyFeeRecipient) external onlyOwner {
-        beefyFeeRecipient = _beefyFeeRecipient;
+    function setBeefyFeeRecipient(address _FeeRecipient) external onlyOwner {
+        beefyFeeRecipient = _FeeRecipient;
     }
 
     /**

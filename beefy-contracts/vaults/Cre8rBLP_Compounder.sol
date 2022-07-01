@@ -20,8 +20,8 @@ contract StrategyBeethovenxDual is StratManager, FeeManager {
 
     // Tokens used
     address public want;
-    address public output = address(0xF24Bcf4d1e507740041C9cFd2DddB29585aDCe1e);
-    address public native = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83);
+    address public output = address(0xF24Bcf4d1e507740041C9cFd2DddB29585aDCe1e); //beets
+    address public native = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83); //wftm
     address public input;
     address public reward;
     address[] public lpTokens;
@@ -47,15 +47,15 @@ contract StrategyBeethovenxDual is StratManager, FeeManager {
 
     constructor(
         bytes32[] memory _balancerPoolIds,
-        uint256 _chefPoolId,
-        address _chef,
-        address _input,
-        address _vault,
-        address _unirouter,
-        address _keeper,
-        address _strategist,
-        address _beefyFeeRecipient
-    ) StratManager(_keeper, _strategist, _unirouter, _vault, _beefyFeeRecipient) public {
+        uint256 _chefPoolId,        //39 CRE8R Gauge
+        address _chef,              // 0x8166994d9ebBe5829EC86Bd81258149B87faCfd3 - BeethovenxMasterChef
+        address _input,             // 0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83 - wFTM
+        address _vault,             // ?????????????????????????????????????????? - ceazCRE8RF-Major
+        address _unirouter,         // 0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce - vault ?beets swap?
+        // address _keeper,
+        address _strategist,        // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor
+        address _FeeRecipient  // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor for now will be xCheese
+    ) StratManager( _strategist, _unirouter, _vault, _FeeRecipient) public {  //removed keeper
         wantPoolId = _balancerPoolIds[0];
         nativeSwapPoolId = _balancerPoolIds[1];
         inputSwapPoolId = _balancerPoolIds[2];
@@ -161,8 +161,8 @@ contract StrategyBeethovenxDual is StratManager, FeeManager {
         uint256 callFeeAmount = nativeBal.mul(callFee).div(MAX_FEE);
         IERC20(native).safeTransfer(callFeeRecipient, callFeeAmount);
 
-        uint256 beefyFeeAmount = nativeBal.mul(beefyFee).div(MAX_FEE);
-        IERC20(native).safeTransfer(beefyFeeRecipient, beefyFeeAmount);
+        uint256 perFeeAmount = nativeBal.mul(perFee).div(MAX_FEE);
+        IERC20(native).safeTransfer(perFeeRecipient, perFeeAmount);
 
         uint256 strategistFee = nativeBal.mul(STRATEGIST_FEE).div(MAX_FEE);
         IERC20(native).safeTransfer(strategist, strategistFee);
