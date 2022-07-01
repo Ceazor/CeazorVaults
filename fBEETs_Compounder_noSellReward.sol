@@ -1257,9 +1257,9 @@ contract CeazorAutoCompoundBeethoven_fBEETS_noFeeSell is Ownable, Pausable {
 
         fees = rewardBal.mul(totalFee).div(PERCENT_DIVISOR);
         // _swap(rewardToken, wftm, wftmRoute_ID, fees);
-        allFees = IERC20(rewardToken).balanceOf(address(this)).sub(rewardBal);
+        // allFees = IERC20(rewardToken).balanceOf(address(this)).sub(rewardBal);
 
-        uint256 callFeeToUser = allFees.mul(callFee).div(PERCENT_DIVISOR);
+        uint256 callFeeToUser = fees.mul(callFee).div(PERCENT_DIVISOR);
         _swap(rewardToken, wftm, wftmRoute_ID, callFeeToUser);       // Ceazor moved swap to here to only swap for callFee, see amount change
 
         IERC20(wftm).safeTransfer(msg.sender, callFeeToUser);
