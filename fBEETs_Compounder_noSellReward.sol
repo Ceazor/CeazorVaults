@@ -2200,7 +2200,7 @@ pragma solidity ^0.8.0;
  *
  * Expect the amount of LP tokens you have to grow over time while you have assets deposit
  */
-contract CeazorAutoCompoundBeethoven_fBEETS is Ownable, Pausable {
+contract CeazorAutoCompoundBeethoven_fBEETS_noFeeSell is Ownable, Pausable {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
@@ -2432,21 +2432,24 @@ contract CeazorAutoCompoundBeethoven_fBEETS is Ownable, Pausable {
      * @dev Takes out fees from the rewards. Set by constructor
      * callFeeToUser is set as a percentage of the fee,
      * as is treasuryFeeToVault
+     * Ceazor modified the following to stop the selling of reward to wftm from most fees
      */
     function _chargeFees(bool _remitStrategist) internal {
         uint256 rewardBal = IERC20(rewardToken).balanceOf(address(this));
         uint256 wftmBal = IERC20(wftm).balanceOf(address(this));
 
         uint256 fees;
-        uint256 wftmFees;
+        uint256 callFees;
 
         
 
         fees = rewardBal.mul(totalFee).div(PERCENT_DIVISOR);
-        _swap(rewardToken, wftm, wftmRoute_ID, fees);
-        wftmFees = IERC20(wftm).balanceOf(address(this)).sub(wftmBal);
+        // _swap(rewardToken, wftm, wftmRoute_ID, fees);
+        callFees = IERC20(rewardToken).balanceOf(address(this)).sub(rewardBal);
 
-        uint256 callFeeToUser = wftmFees.mul(callFee).div(PERCENT_DIVISOR);
+        uint256 callFeeToUser = callFees.mul(callFee).div(PERCENT_DIVISOR);
+        _swap(rewardToken, wftm, wftmRoute_ID, callFees);       // Ceazor moved swap to here to only swap for callFee, see amount change
+
         IERC20(wftm).safeTransfer(msg.sender, callFeeToUser);
 
 
