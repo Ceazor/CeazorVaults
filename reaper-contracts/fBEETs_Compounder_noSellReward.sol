@@ -14,7 +14,7 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 // dont forget to flatten after deploying to verify on ftmscan 
 // see https://forum.openzeppelin.com/t/verify-erc20-token-on-etherscan-that-was-deployed-through-remix-step-by-step-guide/9051
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 
 interface IAuthorizer {
     /**
@@ -173,7 +173,7 @@ interface IGeneralPool is IBasePool {
     ) external returns (uint256 amount);
 }
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 
 interface IMasterChef {
     function poolLength() external view returns (uint256);
@@ -240,7 +240,7 @@ interface ITemporarilyPausable {
         );
 }
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 
 
 interface IVault is ISignaturesValidator, ITemporarilyPausable {
@@ -1002,7 +1002,7 @@ interface IRFVault {
     function getPricePerFullShare() external view returns (uint256);
 }
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 /**
  * @dev Implementation of a strategy to get yields from farming LP Pools in SpookySwap.
  * SpookySwap is an automated market maker (“AMM”) that allows two tokens to be exchanged on Fantom's Opera Network.

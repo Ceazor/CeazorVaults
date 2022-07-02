@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 
 /**
  * @dev Provides information about the current execution context, including the
@@ -24,7 +24,7 @@ abstract contract Context {
 // File: @openzeppelin/contracts/access/Ownable.sol
 
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 
 
 /**
@@ -99,7 +99,7 @@ abstract contract Ownable is Context {
 // File: @openzeppelin/contracts/token/ERC20/IERC20.sol
 
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP.
@@ -184,7 +184,7 @@ interface IERC20 {
 
 
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 
 // CAUTION
 // This version of SafeMath should only be used with Solidity 0.8 or later,
@@ -412,7 +412,7 @@ library SafeMath {
 // File: @openzeppelin/contracts/utils/Address.sol
 
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 
 /**
  * @dev Collection of functions related to the address type
@@ -628,7 +628,7 @@ library Address {
 }
 
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 /**
  * @dev Interface for the optional metadata functions from the ERC20 standard.
  *
@@ -1013,7 +1013,7 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
 // File: @openzeppelin/contracts/token/ERC20/SafeERC20.sol
 
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 
 
 /**
@@ -1113,7 +1113,7 @@ library SafeERC20 {
 // File: @openzeppelin/contracts/utils/Pausable.sol
 
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 
 
 /**
@@ -1360,7 +1360,7 @@ interface IGeneralPool is IBasePool {
     ) external returns (uint256 amount);
 }
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 
 interface IMasterChef {
     function poolLength() external view returns (uint256);
@@ -1427,7 +1427,7 @@ interface ITemporarilyPausable {
         );
 }
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 
 
 interface IVault is ISignaturesValidator, ITemporarilyPausable {
@@ -2189,7 +2189,7 @@ interface IRFVault {
     function getPricePerFullShare() external view returns (uint256);
 }
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 /**
  * @dev Implementation of a strategy to get yields from farming LP Pools in SpookySwap.
  * SpookySwap is an automated market maker (“AMM”) that allows two tokens to be exchanged on Fantom's Opera Network.
