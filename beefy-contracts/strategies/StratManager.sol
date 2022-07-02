@@ -12,6 +12,7 @@ contract StratManager is Ownable, Pausable {
      * {strategist} - Address of the strategy author/deployer where strategist fee will go.
      * {vault} - Address of the vault that controls the strategy's funds.
      * {unirouter} - Address of exchange to execute swaps.
+     * 
      */
     address public keeper;
     address public strategist;
@@ -19,6 +20,7 @@ contract StratManager is Ownable, Pausable {
     address public vault;
     address public perFeeRecipient;
     address public xCheeseRecipient;
+    
 
     /**
      * @dev Initializes the base strategy.

@@ -13,6 +13,8 @@ import "../interfaces/IBalancerVault.sol";
 import "../interfaces/IBeetRewarder.sol";
 import "../strategies/StratManager.sol";
 import "../strategies/FeeManager.sol";
+import "../CeazFunctions/CeazFBeets.sol;
+
 
 contract StrategyBeethovenxDual is StratManager, FeeManager {
     using SafeERC20 for IERC20;
@@ -21,14 +23,20 @@ contract StrategyBeethovenxDual is StratManager, FeeManager {
     // Tokens used
     address public want;
     address public output = address(0xF24Bcf4d1e507740041C9cFd2DddB29585aDCe1e); //beets
-    address public native = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83); //wftm
+    address public native = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83); //wftm    
+    address public BPT = address(0xcdE5a11a4ACB4eE4c805352Cec57E236bdBC3837); //$BPT
     address public input;
     address public reward;
     address[] public lpTokens;
+    
+    // CeazTokens
+    address public ceazFBeets = address(0x58E0ac1973F9d182058E6b63e7F4979bc333f493);  
+    address public FBeets = address(0xfcef8a994209d6916EB2C86cDD2AFD60Aa6F54b1);
 
     // Third party contracts
     address public chef;
     uint256 public chefPoolId;
+    bytes32 public FBeetsPoolID = (0xcde5a11a4acb4ee4c805352cec57e236bdbc3837000200000000000000000019); //BPT-BEETs
     address public rewarder;
     bytes32 public wantPoolId;
     bytes32 public nativeSwapPoolId;
@@ -45,7 +53,7 @@ contract StrategyBeethovenxDual is StratManager, FeeManager {
     event Deposit(uint256 tvl);
     event Withdraw(uint256 tvl);
 
-    constructor(
+    constructor (
         bytes32[] memory _balancerPoolIds,
         uint256 _chefPoolId,        //39 CRE8R Gauge
         address _chef,              // 0x8166994d9ebBe5829EC86Bd81258149B87faCfd3 - BeethovenxMasterChef
@@ -54,10 +62,12 @@ contract StrategyBeethovenxDual is StratManager, FeeManager {
         address _unirouter,         // 0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce - vault ?beets swap?
         address _keeper,            // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor
         address _strategist,        // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor
-        address _perFeeRecipient,  // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor 
-        address _xCheeseRecipient // ?????????????????????????????????????????  - the contact that gets the $BEETS
+        address _perFeeRecipient,   // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor 
+        address _xCheeseRecipient   // ?????????????????????????????????????????  - the contact that gets the $BEETS
+        
 
-    ) StratManager(_keeper, _strategist, _unirouter, _vault, _perFeeRecipient, _xCheeseRecipient) public {  
+    ) 
+    StratManager(_keeper, _strategist, _unirouter, _vault, _perFeeRecipient, _xCheeseRecipient) public {  
         wantPoolId = _balancerPoolIds[0];
         nativeSwapPoolId = _balancerPoolIds[1];
         inputSwapPoolId = _balancerPoolIds[2];
@@ -158,7 +168,8 @@ contract StrategyBeethovenxDual is StratManager, FeeManager {
             balancerSwap(rewardSwapPoolId, reward, native, rewardBal);  //swaps all the cre8r for wftm
         }
 
-        uint256 nativeBal = IERC20(native).balanceOf(address(this)).mul(45).div(1000); //assigns balance of wftm
+        // Ceazor made totalFee adjustable instead of just hard coded 4.5%
+        uint256 nativeBal = IERC20(native).balanceOf(address(this)).mul(totalFee).div(1000); //assigns balance of wftm
 
         uint256 callFeeAmount = nativeBal.mul(callFee).div(MAX_FEE); 
         IERC20(native).safeTransfer(callFeeRecipient, callFeeAmount); //calcs callfee and transfers
@@ -169,10 +180,28 @@ contract StrategyBeethovenxDual is StratManager, FeeManager {
         uint256 strategistFee = nativeBal.mul(STRATEGIST_FEE).div(MAX_FEE);
         IERC20(native).safeTransfer(strategist, strategistFee);      // calcs strategist fee and transfers
 
-        uint256 forXCheese = IERC20(native).balanceOf(address(this));
-        if (forXCheese > 0) {
-            balancerSwap(nativeSwapPoolId, output, native, (forXCheese).div(2));    // swaps half the remaining wtfm for Beets 
-            IERC20(native).safeTransfer(xCheeseRecipient, forXCheese);              // and send them to xCheese
+        // Ceazor wants to take some rewards and convert them wftm->FBeets->ceazFBeets
+        uint256 BeetsForCeaz = IERC20(native).balanceOf(address(this)).div(xCheeseRate); //calcs balance of wftm for FBeets 
+        if (BeetsForCeaz > 0) {            
+            balancerJoin(FBeetsPoolID, native, BeetsForCeaz);       //adds wftm to beets BPL
+            depositBPT(IERC20(native).balanceOf(address(this)));
+            depositCeaz(FBeets, (address(this))) ;           
+            uint256 ceazforXCheese = IERC20(ceazFBeets).balanceOf(address(this));
+            IERC20(ceazFBeets).safeTransfer(xCheeseRecipient, ceazforXCheese);             // and send them to xCheese
+        }
+    }
+    // Deposits all FBeets for ceazFBeets
+    function depositCeaz() external{
+        uint256 ceazBal = IERC20(FBeets).balanceOf(address(this));
+        if (ceazBal > 0){
+            ceazFBeets.depositAll(); //<-------------------------------------------------hook to interface
+        }
+    }
+    // Converts BEETS to FBEETS
+    function depositBPT() external{          
+        uint256 BPTBal = IERC20(_BPT).balanceOf(address(this));
+        if (BPTBal > 0) {
+            FBeets.enter(BPTBal); //<---------------------------------------------------hook to interface
         }
     }
 
@@ -237,7 +266,7 @@ contract StrategyBeethovenxDual is StratManager, FeeManager {
             nativeOut += balancerSwap(rewardSwapPoolId, reward, native, rewardBal);
         }
 
-        return nativeOut.mul(45).div(1000).mul(callFee).div(MAX_FEE);
+        return nativeOut.mul(totalFee).div(1000).mul(callFee).div(MAX_FEE);
     }
 
     function setHarvestOnDeposit(bool _harvestOnDeposit) external onlyManager {
@@ -281,12 +310,14 @@ contract StrategyBeethovenxDual is StratManager, FeeManager {
     }
 
     function _giveAllowances() internal {
-        IERC20(want).safeApprove(chef, uint256(-1));
-        IERC20(output).safeApprove(unirouter, uint256(-1));
-        IERC20(reward).safeApprove(unirouter, uint256(-1));
+        IERC20(want).safeApprove(chef, type(uint256).max);
+        IERC20(output).safeApprove(unirouter, type(uint256).max);
+        IERC20(reward).safeApprove(unirouter, type(uint256).max);
+        IERC20(BPT).safeApprove(FBeets, type(uint256).max);
+        IERC20(FBeets).safeApprove(ceazFBeets, type(uint256).max);
 
         IERC20(input).safeApprove(unirouter, 0);
-        IERC20(input).safeApprove(unirouter, uint256(-1));
+        IERC20(input).safeApprove(unirouter, type(uint256).max);
     }
 
     function _removeAllowances() internal {
