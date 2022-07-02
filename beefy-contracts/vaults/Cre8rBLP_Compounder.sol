@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 pragma experimental ABIEncoderV2;
 
 import "../../openzepplin/ERC20.sol";
@@ -52,10 +52,12 @@ contract StrategyBeethovenxDual is StratManager, FeeManager {
         address _input,             // 0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83 - wFTM
         address _vault,             // ?????????????????????????????????????????? - ceazCRE8RF-Major
         address _unirouter,         // 0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce - vault ?beets swap?
-        // address _keeper,
+        address _keeper,            // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor
         address _strategist,        // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor
-        address _perFeeRecipient  // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor for now will be xCheese
-    ) StratManager( _strategist, _unirouter, _vault, _perFeeRecipient) public {  //removed keeper
+        address _perFeeRecipient,  // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor 
+        address _xCheeseRecipient // ?????????????????????????????????????????  - the contact that gets the $BEETS
+
+    ) StratManager(_keeper, _strategist, _unirouter, _vault, _perFeeRecipient, _xCheeseRecipient) public {  
         wantPoolId = _balancerPoolIds[0];
         nativeSwapPoolId = _balancerPoolIds[1];
         inputSwapPoolId = _balancerPoolIds[2];
@@ -159,7 +161,7 @@ contract StrategyBeethovenxDual is StratManager, FeeManager {
         uint256 nativeBal = IERC20(native).balanceOf(address(this)).mul(45).div(1000); //assigns balance of wftm
 
         uint256 callFeeAmount = nativeBal.mul(callFee).div(MAX_FEE); 
-        IERC20(native).safeTransfer(callperFeeRecipient, callFeeAmount); //calcs callfee and transfers
+        IERC20(native).safeTransfer(callFeeRecipient, callFeeAmount); //calcs callfee and transfers
 
         uint256 perFeeAmount = nativeBal.mul(perFee).div(MAX_FEE);
         IERC20(native).safeTransfer(perFeeRecipient, perFeeAmount);  //calcs perFee and transfers
@@ -187,7 +189,7 @@ contract StrategyBeethovenxDual is StratManager, FeeManager {
 
     function balancerSwap(bytes32 _poolId, address _tokenIn, address _tokenOut, uint256 _amountIn) internal returns (uint256) {
         IBalancerVault.SingleSwap memory singleSwap = IBalancerVault.SingleSwap(_poolId, swapKind, _tokenIn, _tokenOut, _amountIn, "");
-        return IBalancerVault(unirouter).swap(singleSwap, funds, 1, now);
+        return IBalancerVault(unirouter).swap(singleSwap, funds, 1, block.timestamp);
     }
 
     function balancerJoin(bytes32 _poolId, address _tokenIn, uint256 _amountIn) internal {
