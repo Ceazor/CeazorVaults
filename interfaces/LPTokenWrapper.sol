@@ -4,8 +4,8 @@
 
 pragma solidity ^0.8.1;
 
-import "../../openzepplin/SafeMath.sol";
-import "../../openzepplin/SafeERC20.sol";
+import "../openzeppelin/SafeMath.sol";
+import "../openzeppelin/SafeERC20.sol";
 
 
 // Prepare the vault token that will be staked in this farm to earn.    stakedToken  

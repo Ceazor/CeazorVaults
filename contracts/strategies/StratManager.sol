@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.1;
 
-import "../../openzepplin/Ownable.sol";
-import "../../openzepplin/Pauseable.sol";
+import "../openzeppelin/Ownable.sol";
+import "../openzeppelin/Pauseable.sol";
 
 contract StratManager is Ownable, Pausable {
     /**
