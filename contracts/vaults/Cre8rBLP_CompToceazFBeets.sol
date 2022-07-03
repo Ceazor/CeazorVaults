@@ -3,10 +3,10 @@
 pragma solidity ^0.8.1;
 pragma experimental ABIEncoderV2;
 
-import "../openzeppelin/ERC20.sol";
-import "../openzeppelin/SafeERC20.sol";
-import "../openzeppelin/SafeMath.sol";
-import "../openzeppelin/Pauseable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin-contracts/contracts/security/Pauseable.sol";
 
 import "../../interfaces/IBeethovenxChef.sol";
 import "../../interfaces/IBalancerVault.sol";

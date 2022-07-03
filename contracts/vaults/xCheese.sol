@@ -3,14 +3,15 @@
 // SPDX-License-Identifier: MIT
 
 
-import "../../openzeppelin/IERC20.sol";
-import "../../openzeppelin/Context.sol";
-import "../../openzeppelin/Ownable.sol";
-import "../../openzeppelin/SafeMath.sol";
-import "../../openzeppelin/Address.sol";
-import "../../openzeppelin/SafeERC20.sol";
-import "../../openzeppelin/Math.sol";
-import "../../beefy-contracts/interfaces/LPTokenWrapper.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/security/Pauseable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
+import "..//..//interfaces/LPTokenWrapper.sol";
 
 
 
