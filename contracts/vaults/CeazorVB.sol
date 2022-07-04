@@ -22,7 +22,7 @@ pragma solidity ^0.8.11;
  * This is the contract that receives funds and that users interface with.
  * The yield optimizing strategy itself is implemented in a separate 'Strategy.sol' contract.
  */
-contract CeazorVaultVB is ERC20, Ownable, ReentrancyGuard {
+contract CeazorVault is ERC20, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -37,7 +37,7 @@ contract CeazorVaultVB is ERC20, Ownable, ReentrancyGuard {
     IStrategy public strategy;
     // The minimum time it has to pass before a strat candidate can be approved.
     uint256 public approvalDelay;
-    // sets the default initialization of strategy to false, so the intialize function can run.
+    // Default initialization of strategy is false, so the intialize function can run once.
     bool public initialized = false;
 
 
@@ -52,9 +52,9 @@ contract CeazorVaultVB is ERC20, Ownable, ReentrancyGuard {
      * @param _name the name of the vault token.
      * @param _symbol the symbol of the vault token.
      * @param _approvalDelay the delay before a new strat can be approved.
+     * @param _want the token to go in the vault.
      */
-    constructor (
-        IStrategy 
+    constructor ( 
         string memory _name,
         string memory _symbol,
         uint256 _approvalDelay
@@ -166,9 +166,9 @@ contract CeazorVaultVB is ERC20, Ownable, ReentrancyGuard {
     /**
       * @dev Sets the first strategy that will be used for the vault 
       */
-    function initialize(address _strategy) public onlyOwner returns (bool) {
+    function initialize(address _inStrategy) public onlyOwner returns (bool) {
         require(!initialized, "Contract is already initialized.");
-        strategy = _strategy;
+        strategy = _inStrategy;
         initialized = true;
         return true;
     }
