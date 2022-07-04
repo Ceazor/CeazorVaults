@@ -1,11 +1,10 @@
-
-
+// SPDX-License-Identifier: MIT
 // File: contracts/BIFI/utils/LPTokenWrapper.sol
 
 pragma solidity ^0.8.1;
 
-import "../openzeppelin/SafeMath.sol";
-import "../openzeppelin/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 
 // Prepare the vault token that will be staked in this farm to earn.    stakedToken  

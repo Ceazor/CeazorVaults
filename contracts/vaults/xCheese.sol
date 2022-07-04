@@ -4,12 +4,10 @@
 
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/security/Pauseable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "..//..//interfaces/LPTokenWrapper.sol";
 
@@ -143,5 +141,10 @@ contract ExtraCheese is LPTokenWrapper, Ownable {
             require(_token != address(stakedToken), "!staked");
         }
         IERC20(_token).safeTransfer(_to, _amount);
+    }
+
+    // added this to avoide import error statements. from @openzeppelin3.0/contracts/utils/Context.sol
+    function _msgSender() internal view virtual returns (address) {
+        return msg.sender;
     }
 }

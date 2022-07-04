@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.1;
 
-import "../contracts/openzeppelin/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IStrategy {
     function vault() external view returns (address);

@@ -3,9 +3,9 @@
 pragma solidity ^0.8.1;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin-contracts/contracts/security/Pauseable.sol";
 
-contract StratManager is Ownable, Pausable {
+
+contract StratManager is Ownable {
     /**
      * @dev Beefy Contracts:
      * {keeper} - Address to manage a few lower risk features of the strat
