@@ -22,7 +22,7 @@ pragma solidity ^0.8.11;
  * This is the contract that receives funds and that users interface with.
  * The yield optimizing strategy itself is implemented in a separate 'Strategy.sol' contract.
  */
-contract CeazorVaultB6 is ERC20, Ownable, ReentrancyGuard {
+contract CeazorVaultVB is ERC20, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
