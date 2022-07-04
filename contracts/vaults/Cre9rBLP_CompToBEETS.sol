@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.1;
+pragma solidity ^0.8.11;
 pragma experimental ABIEncoderV2;
 
 
@@ -16,7 +16,7 @@ import "../../interfaces/IBeetRewarder.sol";
 import "../strategies/StratManager.sol";
 import "../strategies/FeeManager.sol";
 
-contract StrategyBeethovenxDualToBeets is StratManager, FeeManager {
+contract StrategyBeethovenxDualToBeets is StratManager, FeeManager, Pausable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 

@@ -9,11 +9,12 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "..//..//interfaces/LPTokenWrapper.sol";
 
 
 
-pragma solidity ^0.8.1;
+pragma solidity ^0.8.11;
 
 
 
@@ -144,7 +145,7 @@ contract ExtraCheese is LPTokenWrapper, Ownable {
     }
 
     // added this to avoide import error statements. from @openzeppelin3.0/contracts/utils/Context.sol
-    function _msgSender() internal view virtual returns (address) {
+    function _msgSender() internal view virtual override returns (address) {
         return msg.sender;
     }
 }

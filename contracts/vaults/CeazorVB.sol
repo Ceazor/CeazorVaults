@@ -15,7 +15,7 @@ import "../../interfaces/IStrategy.sol";
 
 
 
-pragma solidity ^0.8.1;
+pragma solidity ^0.8.11;
 
 /**
  * @dev Implementation of a vault to deposit funds for yield optimizing.
