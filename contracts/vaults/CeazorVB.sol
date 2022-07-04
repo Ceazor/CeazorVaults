@@ -37,6 +37,9 @@ contract CeazorVaultVB is ERC20, Ownable, ReentrancyGuard {
     IStrategy public strategy;
     // The minimum time it has to pass before a strat candidate can be approved.
     uint256 public approvalDelay;
+    // sets the default initialization of strategy to false, so the intialize function can run.
+    bool public initialized = false;
+
 
     event NewStratCandidate(address implementation);
     event UpgradeStrat(address implementation);
@@ -46,13 +49,12 @@ contract CeazorVaultVB is ERC20, Ownable, ReentrancyGuard {
      * hold as underlying value. It initializes the vault's own 'ceaz' token.
      * This token is minted when someone does a deposit. It is burned in order
      * to withdraw the corresponding portion of the underlying assets.
-     * @param _strategy the address of the strategy.
      * @param _name the name of the vault token.
      * @param _symbol the symbol of the vault token.
      * @param _approvalDelay the delay before a new strat can be approved.
      */
     constructor (
-        IStrategy _strategy,
+        IStrategy 
         string memory _name,
         string memory _symbol,
         uint256 _approvalDelay
@@ -60,7 +62,6 @@ contract CeazorVaultVB is ERC20, Ownable, ReentrancyGuard {
         _name,
         _symbol
     ) {
-        strategy = _strategy;
         approvalDelay = _approvalDelay;
     }
 
@@ -161,6 +162,15 @@ contract CeazorVaultVB is ERC20, Ownable, ReentrancyGuard {
         }
 
         want().safeTransfer(msg.sender, r);
+    }
+    /**
+      * @dev Sets the first strategy that will be used for the vault 
+      */
+    function initialize(address _strategy) public onlyOwner returns (bool) {
+        require(!initialized, "Contract is already initialized.");
+        strategy = _strategy;
+        initialized = true;
+        return true;
     }
 
     /** 
