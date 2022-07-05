@@ -123,8 +123,8 @@ contract ExtraCheese is LPTokenWrapper, Ownable {
         if (block.timestamp >= periodFinish) {
             rewardRate = reward.div(duration);
         } else {
-            uint256 remaining = periodFinish.sub(block.timestamp);
-            uint256 leftover = remaining.mul(rewardRate);
+            uint256 _remaining = periodFinish.sub(block.timestamp);
+            uint256 leftover = _remaining.mul(rewardRate);
             rewardRate = reward.add(leftover).div(duration);
         }
         lastUpdateTime = block.timestamp;
