@@ -55,6 +55,7 @@ contract CeazorVault is ERC20, Ownable, ReentrancyGuard {
      * @param _want the token to go in the vault.
      */
     constructor ( 
+        address _want,
         string memory _name,
         string memory _symbol,
         uint256 _approvalDelay
@@ -62,11 +63,26 @@ contract CeazorVault is ERC20, Ownable, ReentrancyGuard {
         _name,
         _symbol
     ) {
+        want = IERC20(_want);
         approvalDelay = _approvalDelay;
     }
 
-    function want() public view returns (IERC20) {
-        return IERC20(strategy.want());
+
+
+    // function want() public view returns (IERC20) {
+    //     return IERC20(strategy.want());
+    // }
+
+
+
+        /**
+      * @dev Sets the first strategy that will be used for the vault 
+      */
+    function initialize(address _strategy) public onlyOwner returns (bool) {
+        require(!initialized, "Contract is already initialized.");
+        strategy = _strategy;
+        initialized = true;
+        return true;
     }
 
     /**
@@ -75,7 +91,7 @@ contract CeazorVault is ERC20, Ownable, ReentrancyGuard {
      *  and the balance deployed in other contracts as part of the strategy.
      */
     function balance() public view returns (uint) {
-        return want().balanceOf(address(this)).add(IStrategy(strategy).balanceOf());
+        return want.balanceOf(address(this)).add(strategy).balanceOf();
     }
 
     /**
@@ -85,7 +101,7 @@ contract CeazorVault is ERC20, Ownable, ReentrancyGuard {
      * of putting them to work.
      */
     function available() public view returns (uint256) {
-        return want().balanceOf(address(this));
+        return want.balanceOf(address(this));
     }
 
     /**
@@ -100,7 +116,7 @@ contract CeazorVault is ERC20, Ownable, ReentrancyGuard {
      * @dev A helper function to call deposit() with all the sender's funds.
      */
     function depositAll() external {
-        deposit(want().balanceOf(msg.sender));
+        deposit(want.balanceOf(msg.sender));
     }
 
     /**
@@ -108,10 +124,11 @@ contract CeazorVault is ERC20, Ownable, ReentrancyGuard {
      * into the vault. The vault is then in charge of sending funds into the strategy.
      */
     function deposit(uint _amount) public nonReentrant {
-        strategy.beforeDeposit();
+        require(_amount >0, "U'v put no tokens ser");
+        strategy.beforeDeposit();  
 
         uint256 _pool = balance();
-        want().safeTransferFrom(msg.sender, address(this), _amount);
+        want.safeTransferFrom(msg.sender, address(this), _amount);
         earn();
         uint256 _after = balance();
         _amount = _after.sub(_pool); // Additional check for deflationary tokens
@@ -130,7 +147,7 @@ contract CeazorVault is ERC20, Ownable, ReentrancyGuard {
      */
     function earn() public {
         uint _bal = available();
-        want().safeTransfer(address(strategy), _bal);
+        want.safeTransfer(address(strategy), _bal);
         strategy.deposit();
     }
 
@@ -147,38 +164,30 @@ contract CeazorVault is ERC20, Ownable, ReentrancyGuard {
      * tokens are burned in the process.
      */
     function withdraw(uint256 _shares) public {
+        require(_shares > 0, "U'v askt fer no tokens ser");
         uint256 r = (balance().mul(_shares)).div(totalSupply());
         _burn(msg.sender, _shares);
 
-        uint b = want().balanceOf(address(this));
+        uint b = want.balanceOf(address(this));
         if (b < r) {
             uint _withdraw = r.sub(b);
-            strategy.withdraw(_withdraw);
-            uint _after = want().balanceOf(address(this));
+            strategy.withdraw(_withdraw); //<---- why does this look in IStrategy, where does it get "strategy")
+            uint _after = want.balanceOf(address(this));
             uint _diff = _after.sub(b);
             if (_diff < _withdraw) {
                 r = b.add(_diff);
             }
         }
 
-        want().safeTransfer(msg.sender, r);
+        want.safeTransfer(msg.sender, r);
     }
-    /**
-      * @dev Sets the first strategy that will be used for the vault 
-      */
-    function initialize(address _inStrategy) public onlyOwner returns (bool) {
-        require(!initialized, "Contract is already initialized.");
-        strategy = _inStrategy;
-        initialized = true;
-        return true;
-    }
+
 
     /** 
      * @dev Sets the candidate for the new strat to use with this vault.
      * @param _implementation The address of the candidate strategy.  
      */
     function proposeStrat(address _implementation) public onlyOwner {
-        require(address(this) == IStrategy(_implementation).vault(), "Proposal not valid for this Vault");
         stratCandidate = StratCandidate({
             implementation: _implementation,
             proposedTime: block.timestamp
@@ -194,13 +203,13 @@ contract CeazorVault is ERC20, Ownable, ReentrancyGuard {
      */
 
     function upgradeStrat() public onlyOwner {
-        require(stratCandidate.implementation != address(0), "There is no candidate");
-        require(stratCandidate.proposedTime.add(approvalDelay) < block.timestamp, "Delay has not passed");
+        require(stratCandidate.implementation != address(0), "There be no candidate, ser");
+        require(stratCandidate.proposedTime.add(approvalDelay) < block.timestamp, "Wait longa ser");
 
         emit UpgradeStrat(stratCandidate.implementation);
 
         strategy.retireStrat();
-        strategy = IStrategy(stratCandidate.implementation);
+        strategy = stratCandidate.implementation;
         stratCandidate.implementation = address(0);
         stratCandidate.proposedTime = 5000000000;
 
@@ -212,7 +221,7 @@ contract CeazorVault is ERC20, Ownable, ReentrancyGuard {
      * @param _token address of the token to rescue.
      */
     function inCaseTokensGetStuck(address _token) external onlyOwner {
-        require(_token != address(want()), "!token");
+        require(_token != address(want), "!token");
 
         uint256 amount = IERC20(_token).balanceOf(address(this));
         IERC20(_token).safeTransfer(msg.sender, amount);

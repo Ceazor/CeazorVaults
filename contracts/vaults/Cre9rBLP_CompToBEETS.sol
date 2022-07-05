@@ -60,6 +60,7 @@ contract StrategyBeethovenxDualToBeets is StratManager, FeeManager, Pausable {
         address _strategist,        // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor
         address _perFeeRecipient   // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor 
 
+
     ) 
     
     StratManager(_keeper, _strategist, _unirouter, _vault, _perFeeRecipient) public {  
@@ -93,7 +94,7 @@ contract StrategyBeethovenxDualToBeets is StratManager, FeeManager, Pausable {
     }
 
     function withdraw(uint256 _amount) external {
-        require(msg.sender == vault, "!vault");
+        require(msg.sender == vault, "ask the vault to withdraw ser!");  //makes sure only the vault can withdraw from the chef
 
         uint256 wantBal = IERC20(want).balanceOf(address(this));
 
@@ -118,7 +119,7 @@ contract StrategyBeethovenxDualToBeets is StratManager, FeeManager, Pausable {
 
     function beforeDeposit() external override {
         if (harvestOnDeposit) {
-            require(msg.sender == vault, "!vault");
+            require(msg.sender == vault, "!vault");  //makes sure the vault is the only one that can do quick preDeposit Harvest
             _harvest(tx.origin);
         }
     }
@@ -147,7 +148,7 @@ contract StrategyBeethovenxDualToBeets is StratManager, FeeManager, Pausable {
             deposit();
 
             lastHarvest = block.timestamp;
-            emit StratHarvest(msg.sender, wantHarvested, balanceOf());
+            emit StratHarvest(msg.sender, wantHarvested, balanceOf()); //tells everyone who did the harvest (they need be paid)
         }
     }
 
@@ -263,7 +264,7 @@ contract StrategyBeethovenxDualToBeets is StratManager, FeeManager, Pausable {
 
     // called as part of strat migration. Sends all the available funds back to the vault.
     function retireStrat() external {
-        require(msg.sender == vault, "!vault");
+        require(msg.sender == vault, "anon, you not the vault!"); //makes sure that only the vault can retire a strat
 
         IBeethovenxChef(chef).emergencyWithdraw(chefPoolId, address(this));
 
