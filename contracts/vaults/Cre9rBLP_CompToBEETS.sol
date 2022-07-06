@@ -59,8 +59,6 @@ contract StrategyBeethovenxDualToBeets is StratManager, FeeManager, Pausable {
         address _keeper,            // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor
         address _strategist,        // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor
         address _perFeeRecipient   // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor 
-
-
     ) 
     
     StratManager(_keeper, _strategist, _unirouter, _vault, _perFeeRecipient) public {  
