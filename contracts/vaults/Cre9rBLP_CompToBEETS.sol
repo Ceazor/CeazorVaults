@@ -62,10 +62,10 @@ contract StrategyBeethovenxDualToBeets is StratManager, FeeManager, Pausable {
     ) 
     
     StratManager(_keeper, _strategist, _unirouter, _vault, _perFeeRecipient) public {  
-        wantPoolId = _balancerPoolIds[0];
-        nativeSwapPoolId = _balancerPoolIds[1];
-        inputSwapPoolId = _balancerPoolIds[2];
-        rewardSwapPoolId = _balancerPoolIds[3];
+        wantPoolId = _balancerPoolIds[0];         //0xbb4607bede4610e80d35c15692efcb7807a2d0a6000200000000000000000140
+        nativeSwapPoolId = _balancerPoolIds[1];   //0xcde5a11a4acb4ee4c805352cec57e236bdbc3837000200000000000000000019
+        inputSwapPoolId = _balancerPoolIds[2];    //0xcde5a11a4acb4ee4c805352cec57e236bdbc3837000200000000000000000019
+        rewardSwapPoolId = _balancerPoolIds[3];   //0xbb4607bede4610e80d35c15692efcb7807a2d0a6000200000000000000000140
         chefPoolId = _chefPoolId;
         chef = _chef;
 
