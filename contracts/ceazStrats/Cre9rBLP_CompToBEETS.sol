@@ -38,7 +38,7 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
     uint256 public chefPoolId;
     address public rewarder;
     bytes32 public wantPoolId;
-    bytes32 public nativeSwapPoolId;
+    bytes32 public beetsSwapPoolId = 0xcde5a11a4acb4ee4c805352cec57e236bdbc3837000200000000000000000019; //poolID to sell Beets in
     bytes32 public rewardSwapPoolId;
 
 
@@ -53,9 +53,8 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
     event Withdraw(uint256 tvl);
 
     constructor(
-        address _input,             // 0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83 - wFTM
         address _vault,             // ?????????????????????????????????????????? - ceazCRE8RF-Major
-        address _unirouter,         // 0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce - "Vault" Beethoven swap
+        address _input,             // 0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83 - wFTM
         address _strategist,        // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor
         address _perFeeRecipient,   // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor
         address _want,              // 0xbb4607beDE4610e80d35C15692eFcB7807A2d0A6 - CRE8RFMajor BPT
@@ -63,16 +62,14 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
         address _rewarder,          // 0x1098D1712592Bf4a3d73e5fD29Ae0da6554cd39f - CRE8R token farm
         uint256 _chefPoolId,        //39 CRE8R Gauge
         bytes32 _wantPoolId,        //0xbb4607bede4610e80d35c15692efcb7807a2d0a6000200000000000000000140
-        bytes32 _nativeSwapPoolId,  //0xcde5a11a4acb4ee4c805352cec57e236bdbc3837000200000000000000000019
         bytes32 _rewardPoolId       //0xbb4607bede4610e80d35c15692efcb7807a2d0a6000200000000000000000140 - this assumes the reward might be different than the want
 
 
     ) {  
         wantPoolId = _wantPoolId;
-        nativeSwapPoolId = _nativeSwapPoolId;
         rewardSwapPoolId = _rewardPoolId;
         chefPoolId = _chefPoolId;
-        input = _input; //!!!! This is hard coded to wFTM above, so if the pool doesn't have wFTM this will not work
+        input = _input; //!!!! This is preset to wFTM above, so if the pool doesn't have wFTM this will not work
         want = _want;
         lpTokens = [input, reward];  // !!!this may contain more than 2 tokens
         reward = _reward;
@@ -128,9 +125,9 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
         _harvest(tx.origin);
     }
 
-    function harvest(address callFeeRecipient) external virtual {
-        _harvest(callFeeRecipient);
-    }
+    // function harvest(address callFeeRecipient) external virtual {
+    //     _harvest(callFeeRecipient);
+    // }
 
     function managerHarvest() external onlyOwner {
         _harvest(tx.origin);
@@ -139,8 +136,8 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
     // compounds earnings and charges performance fee
     function _harvest(address callFeeRecipient) internal whenNotPaused {
         IBeethovenxChef(chef).harvest(chefPoolId, address(this));
-        uint256 BeetsBal = IERC20(Beets).balanceOf(address(this));   // beets harvest
-        uint256 rewardBal = IERC20(reward).balanceOf(address(this));   // cre8r harvest
+        // uint256 BeetsBal = IERC20(Beets).balanceOf(address(this));   // beets harvest redundant as it calls in chargeFees
+        // uint256 rewardBal = IERC20(reward).balanceOf(address(this));   // cre8r harvest redundant
         if (BeetsBal > 0 || rewardBal > 0) {
             chargeFees(callFeeRecipient);
             addLiquidity();
@@ -156,7 +153,7 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
     function chargeFees(address callFeeRecipient) internal {
         uint256 BeetsBal = IERC20(Beets).balanceOf(address(this));
         if (BeetsBal > 0) {
-            balancerSwap(nativeSwapPoolId, Beets, native, BeetsBal);  // swaps all the beets for wftm
+            balancerSwap(beetsSwapPoolId, Beets, native, BeetsBal);  // swaps all the beets for wftm
         }
 
         uint256 rewardBal = IERC20(reward).balanceOf(address(this));
@@ -164,21 +161,21 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
             balancerSwap(rewardSwapPoolId, reward, native, rewardBal);  //swaps all the cre8r for wftm
         }
         // ceazor made total fee variable
-        uint256 nativeBal = IERC20(native).balanceOf(address(this)).mul(totalFee).div(1000); //assigns balance of wftm
+        uint256 _FeesInNativeBal = IERC20(native).balanceOf(address(this)).mul(totalFee).div(1000); //assigns balance of wftm
 
-        uint256 callFeeAmount = nativeBal.mul(callFee).div(MAX_FEE); 
+        uint256 callFeeAmount = _FeesInNativeBal.mul(callFee).div(MAX_FEE); 
         IERC20(native).safeTransfer(callFeeRecipient, callFeeAmount); //calcs callfee and transfers
 
-        uint256 perFeeAmount = nativeBal.mul(perFee).div(MAX_FEE);
+        uint256 perFeeAmount = _FeesInNativeBal.mul(perFee).div(MAX_FEE);
         IERC20(native).safeTransfer(perFeeRecipient, perFeeAmount);  //calcs perFee and transfers
 
-        uint256 strategistFee = nativeBal.mul(STRATEGIST_FEE).div(MAX_FEE);
+        uint256 strategistFee = _FeesInNativeBal.mul(STRATEGIST_FEE).div(MAX_FEE);
         IERC20(native).safeTransfer(strategist, strategistFee);      // calcs strategist fee and transfers
 
         //ceazor added swap some back to Beets
         uint256 forXCheese = IERC20(native).balanceOf(address(this));
         if (forXCheese > 0) {
-            balancerSwap(nativeSwapPoolId, native, Beets, (forXCheese).div(xCheeseRate));    // swaps % to the remaining wtfm for Beets 
+            balancerSwap(beetsSwapPoolId, native, Beets, (forXCheese).div(xCheeseRate));    // swaps % to the remaining wtfm for Beets 
             IERC20(Beets).safeTransfer(xCheeseRecipient, forXCheese);              // and send them to xCheese
         }
     }
@@ -192,7 +189,7 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
     function addLiquidity() internal {
         if (input != native) {
             uint256 BeetsBal = IERC20(Beets).balanceOf(address(this));
-            balancerSwap(nativeSwapPoolId, Beets, input, BeetsBal);
+            balancerSwap(beetsSwapPoolId, Beets, input, BeetsBal);
         }
 
         uint256 inputBal = IERC20(input).balanceOf(address(this));
@@ -243,7 +240,7 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
         (uint256 BeetsBal, uint256 rewardBal) = rewardsAvailable();
         uint256 nativeOut;
         if (BeetsBal > 0) {
-            nativeOut = balancerSwap(nativeSwapPoolId, Beets, native, BeetsBal);
+            nativeOut = balancerSwap(beetsSwapPoolId, Beets, native, BeetsBal);
         }
         if (rewardBal > 0) {
             nativeOut += balancerSwap(rewardSwapPoolId, reward, native, rewardBal);
@@ -302,7 +299,13 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
         require(msg.sender == strategist, "!strategist");
         strategist = _strategist;
     }
-
+        /**
+     * @dev Updates fee recipient.
+     * @param _perFeeRecipient new performance fee recipient address.
+     */
+    function setperFeeRecipient(address _perFeeRecipient) external onlyOwner {
+        perFeeRecipient = _perFeeRecipient;
+    }
     /**
      * @dev Updates router that will be used for swaps.
      * @param _unirouter new unirouter address.
@@ -310,7 +313,6 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
     function setUnirouter(address _unirouter) external onlyOwner {
         unirouter = _unirouter;
     }
-
     /**
      * @dev Updates parent vault.
      * @param _vault new vault address.
@@ -319,13 +321,7 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
         vault = _vault;
     }
 
-    /**
-     * @dev Updates fee recipient.
-     * @param _perFeeRecipient new performance fee recipient address.
-     */
-    function setperFeeRecipient(address _perFeeRecipient) external onlyOwner {
-        perFeeRecipient = _perFeeRecipient;
-    }
+
 
 
     function _giveAllowances() internal {
