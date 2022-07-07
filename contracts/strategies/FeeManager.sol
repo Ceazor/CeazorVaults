@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 pragma solidity ^0.8.11;
 
-import "./StratManager.sol";
 
-abstract contract FeeManager is StratManager {
+abstract contract FeeManager is Ownable {
     uint constant public STRATEGIST_FEE = 112;
     uint constant public MAX_FEE = 1000;
     uint constant public MAX_CALL_FEE = 111;
@@ -18,20 +19,20 @@ abstract contract FeeManager is StratManager {
     uint public perFee = MAX_FEE - STRATEGIST_FEE - callFee;
     uint public xCheeseRate = 2;
 
-    function setTotalFee(uint256 _totalFee) public onlyManager {
+    function setTotalFee(uint256 _totalFee) public onlyOwner {
         require(_totalFee <= MAX_TOTAL_FEE, "!cap");
 
         totalFee = _totalFee;
     }
 
-    function setCallFee(uint256 _fee) public onlyManager {
+    function setCallFee(uint256 _fee) public onlyOwner {
         require(_fee <= MAX_CALL_FEE, "!cap");
         
         callFee = _fee;
         perFee = MAX_FEE - STRATEGIST_FEE - callFee;
     }
 
-    function setWithdrawalFee(uint256 _fee) public onlyManager {
+    function setWithdrawalFee(uint256 _fee) public onlyOwner {
         require(_fee <= WITHDRAWAL_FEE_CAP, "!cap");
 
         withdrawalFee = _fee;
@@ -44,7 +45,7 @@ abstract contract FeeManager is StratManager {
     // 1 = ALL profts will be sent ???? brick?? can't be set to 1
     // 2 = half sent
     // 4 = 25 percent sent
-    function setxCheeseRate(uint256 _rate) public onlyManager {
+    function setxCheeseRate(uint256 _rate) public onlyOwner {
         require(_rate != 1, "can't set this to 1"); 
         xCheeseRate = _rate;                                     
     }
