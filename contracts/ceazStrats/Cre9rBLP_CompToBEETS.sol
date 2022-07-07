@@ -27,14 +27,14 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
     address public input;
     address public reward;
     address[] public lpTokens;
-    address public unirouter = address(0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce); // Beethoven Swap route
-    address public vault;                // The vault this strat is for
-    address public perFeeRecipient;      // Who gets the performance fee
-    address public strategist;           // Who gets the strategy fee
-    address public xCheeseRecipient = address(0x699675204aFD7Ac2BB146d60e4E3Ddc243843519); // preset to owner CHANGE ASAP
+    address public unirouter = address(0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce);         // Beethoven Swap route (The VAULT)
+    address public vault;                                                                   // The vault this strat is for
+    address public perFeeRecipient;                                                         // Who gets the performance fee
+    address public strategist;                                                              // Who gets the strategy fee
+    address public xCheeseRecipient = address(0x699675204aFD7Ac2BB146d60e4E3Ddc243843519);  // preset to owner CHANGE ASAP
 
     // Third party contracts
-    address public chef = address(0x8166994d9ebBe5829EC86Bd81258149B87faCfd3); //hard coding this in to start
+    address public chef = address(0x8166994d9ebBe5829EC86Bd81258149B87faCfd3);              //hard coding this in to start
     uint256 public chefPoolId;
     address public rewarder;
     bytes32 public wantPoolId;
@@ -68,6 +68,8 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
     ) {  
         wantPoolId = _wantPoolId;
         rewardSwapPoolId = _rewardPoolId;
+        perFeeRecipient = _perFeeRecipient;
+        strategist = _strategist;
         chefPoolId = _chefPoolId;
         input = _input; //!!!! This is preset to wFTM above, so if the pool doesn't have wFTM this will not work
         want = _want;
@@ -136,8 +138,8 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
     // compounds earnings and charges performance fee
     function _harvest(address callFeeRecipient) internal whenNotPaused {
         IBeethovenxChef(chef).harvest(chefPoolId, address(this));
-        // uint256 BeetsBal = IERC20(Beets).balanceOf(address(this));   // beets harvest redundant as it calls in chargeFees
-        // uint256 rewardBal = IERC20(reward).balanceOf(address(this));   // cre8r harvest redundant
+        uint256 BeetsBal = IERC20(Beets).balanceOf(address(this));   // beets harvest redundant as it calls in chargeFees
+        uint256 rewardBal = IERC20(reward).balanceOf(address(this));   // cre8r harvest redundant
         if (BeetsBal > 0 || rewardBal > 0) {
             chargeFees(callFeeRecipient);
             addLiquidity();
@@ -178,12 +180,7 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
             balancerSwap(beetsSwapPoolId, native, Beets, (forXCheese).div(xCheeseRate));    // swaps % to the remaining wtfm for Beets 
             IERC20(Beets).safeTransfer(xCheeseRecipient, forXCheese);              // and send them to xCheese
         }
-    }
-
-    // Sets the xCheeseRecipient address to recieve the BEETs rewards
-    function setxCheeseRecipient(address _xCheeseRecipient) external onlyOwner {
-        xCheeseRecipient = _xCheeseRecipient;
-    }
+    }   
 
     // Adds liquidity to AMM and gets more LP tokens.
     function addLiquidity() internal {
@@ -202,6 +199,8 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
     }
 
     function balancerJoin(bytes32 _poolId, address _tokenIn, uint256 _amountIn) internal {
+    
+
         uint256[] memory amounts = new uint256[](lpTokens.length);
         for (uint256 i = 0; i < amounts.length; i++) {
             amounts[i] = lpTokens[i] == _tokenIn ? _amountIn : 0;
@@ -289,7 +288,10 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
         deposit();
     }
 
-
+    // Sets the xCheeseRecipient address to recieve the BEETs rewards
+    function setxCheeseRecipient(address _xCheeseRecipient) external onlyOwner {
+        xCheeseRecipient = _xCheeseRecipient;
+    }
 
     /**
      * @dev Updates address where strategist fee earnings will go.
