@@ -1,5 +1,5 @@
 #here are some samples of a.deploy statements for the Vault and the BeethDual Strats.
-name = CeazorVaultR.deploy(address _want, string  _name, string  _symbol, uint256 _approvalDelay, uint256 _depositFee {'from': deployer})
+name = CeazorVaultR.deploy(address _want, string  _name, string  _symbol, uint256 _approvalDelay, uint256 _depositFee {'from': accounts[0]})
 cre8rBPTComp = StrategyBeethovenxDualToBeets.deploy()
         address _vault,             // ?????????????????????????????????????????? - ceazCRE8RF-Major
         address _input,             // 0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83 - wFTM
@@ -17,15 +17,18 @@ cre8rBPTComp = StrategyBeethovenxDualToBeets.deploy()
 #########
 
 #import the common variables
-owner = ("0x699675204aFD7Ac2BB146d60e4E3Ddc243843519")
-hotwallet = ("0xA67D2c03c3cfe6177a60cAed0a4cfDA7C7a563e0")
-ceazor = ("0x3c5Aac016EF2F178e8699D6208796A2D67557fe2")
-deployer = ("0x491197f85E73091865c7032cB95593911493f78a")
+owner = "0x699675204aFD7Ac2BB146d60e4E3Ddc243843519"
+hotwallet = "0xA67D2c03c3cfe6177a60cAed0a4cfDA7C7a563e0"
+ceazor = "0x3c5Aac016EF2F178e8699D6208796A2D67557fe2"
+deployer = "0x491197f85E73091865c7032cB95593911493f78a"
 
 # vaults, strats, xCheese
-ceazfBEETs = Contract("0x58E0ac1973F9d182058E6b63e7F4979bc333f493")
-ceazFBeetsAutoComp = Contract("0x38a206688332674bE5eD20B5A65282224B43c189")
-xCheese = Contract("0xAe71E0AeADa3bf9a188f06464528313Ce8D3E740")
+ceazFBEETs = Contract("0x58E0ac1973F9d182058E6b63e7F4979bc333f493")
+ceazFBeetsStrat = Contract("0x38a206688332674bE5eD20B5A65282224B43c189")
+xCheeseFBeets = Contract("0xAe71E0AeADa3bf9a188f06464528313Ce8D3E740")
+
+ceazCRE8RBPT = Contract("0xb06f1e0620f6b83c84a85E3c382442Cd1507F558")
+ceazCRE8RBPTStrat = Contract("0xFE4bc4767d78A57d569cD68a9B1D6ddafd42bdc3")
 
 # Common Tokens
 wFTM = Contract("0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83")
@@ -36,7 +39,8 @@ cre8rBPT = Contract("0xbb4607beDE4610e80d35C15692eFcB7807A2d0A6")
 
 
 #deploy this
-ceazorVault = CeazorVaultR.deploy(cre8rBPT, "CeazorCre8rBPTVault", "ceazCRE8RBPT", 3600, 0, {'from': deployer})
+ceazorVault = CeazorVaultR.deploy(cre8rBPT, "CeazorCre8rBPTVault", "ceazCRE8RBPT", 3600, 0, {'from': accounts[0]}, publish_source=True)
+xCheeseTest = ExtraCheese.deploy(ceazFBEETs, cre8r, {'from': owner})
 #Verify the at:
 
 #1-Check that 1st entry matches vault above.
@@ -50,29 +54,29 @@ ceazorVault = CeazorVaultR.deploy(cre8rBPT, "CeazorCre8rBPTVault", "ceazCRE8RBPT
 #9-This is the poolID that swaps the want, found in READ of the want
 #10-This is the poolID that swaps the reward, CHECK if REWARDS don't match WANT 
 cre8rBPTComp = StrategyBeethovenxDualToBeets.deploy(
-    "0x794bCeBFdBD997a2C06d506D2e779035C33F6235",
-    wFTM,    
-    ceazor,  
-    ceazor,
+    "0xb06f1e0620f6b83c84a85E3c382442Cd1507F558",
+    "0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83",    
+    "0x3c5Aac016EF2F178e8699D6208796A2D67557fe2",  
+    "0x3c5Aac016EF2F178e8699D6208796A2D67557fe2",
     "0xbb4607beDE4610e80d35C15692eFcB7807A2d0A6",
-    cre8r,
+    "0x2aD402655243203fcfa7dCB62F8A08cc2BA88ae0",
     "0x1098D1712592Bf4a3d73e5fD29Ae0da6554cd39f",
     39,
     "0xbb4607bede4610e80d35c15692efcb7807a2d0a6000200000000000000000140",
     "0xbb4607bede4610e80d35c15692efcb7807a2d0a6000200000000000000000140",    
-    {'from': "0x491197f85E73091865c7032cB95593911493f78a"})
+    {'from': accounts[0]})
 
 #Get the Strategy address outputted and use it to init the vault. DO this once.
-ceazorVault.initialize(cre8rBPTComp, {'from': deployer})
+ceazorVault.initialize(ceazCRE8RBPTStrat, {'from': accounts[0]})
 
 #Deploy XCheese for strategy.
 #Needs stake token, reward token, duration
-extraCheese = ExtraCheese.deploy(ceazorVault, beets, 1209600, {'from': deployer})
+extraCheese = ExtraCheese.deploy(ceazorVault, beets, 1209600, {'from': accounts[0]})
 
 #Transfer ownerships of all three to owner.
-ceazorVault.transferOwnership(owner, {'from': deployer})
-cre8rBPTComp.transferOwnership(owner, {'from': deployer})
-xCheese.transferOwnership(owner, {'from': deployer})
+ceazorVault.transferOwnership(owner, {'from': accounts[0]})
+cre8rBPTComp.transferOwnership(owner, {'from': accounts[0]})
+xCheese.transferOwnership(owner, {'from': accounts[0]})
 
 
 ######
@@ -82,6 +86,9 @@ xCheese.transferOwnership(owner, {'from': deployer})
 cre8rBPT.approve(ceazorVault, 11*1e18, {'from': ceazor})
 ceazorVault.depositAll({'from': ceazor})
 ceazorVault.balanceOf(ceazor)
-chain.mine(400)
+chain.mine(4000)
 tx = cre8rBPTComp.harvest({'from': owner})
 tx.call_trace(True)
+
+##VERIFY
+CeazorVaultR.publish_source(Contract('0xb06f1e0620f6b83c84a85E3c382442Cd1507F558'))

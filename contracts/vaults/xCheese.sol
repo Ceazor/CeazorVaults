@@ -21,13 +21,14 @@ pragma solidity ^0.8.11;
 contract ExtraCheese is LPTokenWrapper, Ownable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
-    IERC20 public rewardToken;
-    uint256 public duration;
 
+    IERC20 public rewardToken;
+    uint256 public duration = 2628288; //Preset to 1month;
     uint256 public periodFinish = 0;
     uint256 public rewardRate = 0;
     uint256 public lastUpdateTime;
     uint256 public rewardPerTokenStored;
+
     mapping(address => uint256) public userRewardPerTokenPaid;
     mapping(address => uint256) public rewards;
 
@@ -36,12 +37,11 @@ contract ExtraCheese is LPTokenWrapper, Ownable {
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
 
-    constructor(address _stakedToken, address _rewardToken,  uint256 _duration)
+    constructor(address _stakedToken, address _rewardToken)
         
         LPTokenWrapper(_stakedToken)
     {
         rewardToken = IERC20(_rewardToken);
-        duration = _duration;
     }
 
     modifier updateReward(address account) {
@@ -84,23 +84,26 @@ contract ExtraCheese is LPTokenWrapper, Ownable {
 
     // stake visibility is public as overriding LPTokenWrapper's stake() function
     function stake(uint256 amount) override public updateReward(msg.sender) {
-        require(amount > 0, "Cannot stake 0");
+        require(amount > 0, "Go get you some ceazTKNS");
         super.stake(amount);
         emit Staked(msg.sender, amount);
     }
 
+    // users withdraw their staked tokens.
     function withdraw(uint256 amount) override public updateReward(msg.sender) {
-        require(amount > 0, "Cannot withdraw 0");
+        require(amount > 0, "You ave no tkns in here ser.");
         super.withdraw(amount);
         emit Withdrawn(msg.sender, amount);
     }
 
+    // Withdraw ALL and Claims rewards
     function exit() external {
         withdraw(balanceOf(msg.sender));
         getReward();
     }
 
-        function getReward() public updateReward(msg.sender) {
+    // Claims rewards
+    function getReward() public updateReward(msg.sender) {
         uint256 reward = earned(msg.sender);
         if (reward > 0) {
             rewards[msg.sender] = 0;
@@ -109,34 +112,50 @@ contract ExtraCheese is LPTokenWrapper, Ownable {
         }
     }
 
-    function notifyRewardAmount()
+    // Calculates the reward rate based on the duration and tokens in the contract.
+    function notifyRewardAmount()  
         external
         onlyOwner
         updateReward(address(0))
     {
-        require(periodFinish == 0, "!notified");
+        uint256 reward = IERC20(rewardToken).balanceOf(address(this));  // balance of tkns in contract now
+        require(reward != 0, "you gotta fill'r up ser");                             // make sure not = 0
+        rewardRate = reward.div(duration);                              
 
-        uint256 reward = IERC20(rewardToken).balanceOf(address(this));
-
-        require(reward != 0, "no rewards");
-            
-        if (block.timestamp >= periodFinish) {
-            rewardRate = reward.div(duration);
-        } else {
-            uint256 _remaining = periodFinish.sub(block.timestamp);
-            uint256 leftover = _remaining.mul(rewardRate);
-            rewardRate = reward.add(leftover).div(duration);
-        }
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp.add(duration);
         emit RewardAdded(reward);
     }
+    
+    // Allows the owner to adjust the duration of the rewards. Reduce to increase APY
+    // assuming there are tokens in the contract.
+    function changeDuration(uint256 _newDuration) 
+        external 
+        onlyOwner 
+        updateReward(address(0)) 
+    {
+        duration = _newDuration;
+        newDurRewardAmount();
+    }
+    
+    // This function is only called when changeDuration is called. It resets the
+    // reward rate.
+    function newDurRewardAmount() internal {
+        uint256 reward = IERC20(rewardToken).balanceOf(address(this)); //gets balance  
+        require(reward != 0, "no rewards");                            //checks balance 
+        rewardRate = reward.div(duration);                             // 
+        lastUpdateTime = block.timestamp;
+        periodFinish = block.timestamp.add(duration);
+        emit RewardAdded(reward);
+    }   
 
+    // yup yup ser.
     function inCaseTokensGetStuck(address _token) external onlyOwner {
         uint256 amount = IERC20(_token).balanceOf(address(this));
         inCaseTokensGetStuck(_token, msg.sender, amount);
     }
 
+    // dev. can you do something?
     function inCaseTokensGetStuck(address _token, address _to, uint _amount) public onlyOwner {
         if (totalSupply() != 0) {
             require(_token != address(stakedToken), "!staked");
