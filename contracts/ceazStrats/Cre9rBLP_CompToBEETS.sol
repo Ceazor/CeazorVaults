@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-
+import "../../interfaces/IBaseWeightedPool.sol";
 import "../../interfaces/IBeethovenxChef.sol";
 import "../../interfaces/IBalancerVault.sol";
 import "../../interfaces/IBeetRewarder.sol";
@@ -184,13 +184,8 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
 
     // Adds liquidity to AMM and gets more LP tokens.
     function addLiquidity() internal {
-        if (input != native) {
-            uint256 BeetsBal = IERC20(Beets).balanceOf(address(this));
-            balancerSwap(beetsSwapPoolId, Beets, input, BeetsBal);
-        }
-
-        uint256 inputBal = IERC20(input).balanceOf(address(this));
-        balancerJoin(wantPoolId, input, inputBal);
+        uint256 nativeBal = IERC20(native).balanceOf(address(this));
+        balancerJoin(wantPoolId, native, nativeBal);
     }
 
     function balancerSwap(bytes32 _poolId, address _tokenIn, address _tokenOut, uint256 _amountIn) internal returns (uint256) {
@@ -198,14 +193,13 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
         return IBalancerVault(unirouter).swap(singleSwap, funds, 1, block.timestamp);
     }
 
-    function balancerJoin(bytes32 _poolId, address _tokenIn, uint256 _amountIn) internal {
-    
+    function balancerJoin(bytes32 _poolId, address _tokenIn, uint256 _amountIn) internal {    
 
         uint256[] memory amounts = new uint256[](lpTokens.length);
         for (uint256 i = 0; i < amounts.length; i++) {
             amounts[i] = lpTokens[i] == _tokenIn ? _amountIn : 0;
         }
-        bytes memory userData = abi.encode(1, amounts, 1);
+        bytes memory userData = abi.encode(1, amounts, 1);   
 
         IBalancerVault.JoinPoolRequest memory request = IBalancerVault.JoinPoolRequest(lpTokens, amounts, userData, false);
         IBalancerVault(unirouter).joinPool(_poolId, address(this), address(this), request);
