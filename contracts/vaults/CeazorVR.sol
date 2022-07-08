@@ -100,8 +100,7 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
      */
 
     function initialize(address _strategy) public onlyOwner returns (bool) {
-        require(!initialized, "Contract is already initialized.");
-        require(block.timestamp <= (constructionTime + 3600), "initialization period over, use timelock");
+        require(!initialized, "Comm'on you alrdy did this!");
         strategy = _strategy;
         initialized = true;
         return true;
