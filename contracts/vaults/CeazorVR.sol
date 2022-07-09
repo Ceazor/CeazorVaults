@@ -36,16 +36,15 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
     uint256 public constant PERCENT_DIVISOR = 10000;
 
     /**
-    * @dev The strategy's initialization status. Gives deployer 60 minutes after contract
-    * construction (constructionTime) to set the strategy implementation.
+    * @dev The strategy's initialization status. 
     */
     bool public initialized = false;
     uint public constructionTime;
 
     // The token the vault accepts and looks to maximize.
     IERC20 public want;
-    // The minimum time it has to pass before a strat candidate can be approved.
-    uint256 public approvalDelay;
+    // The minimum time it has to pass before a strat candidate can be approved. This is preset to 1 hour
+    uint256 public approvalDelay = 3600;
 
     /**
      * + WEBSITE DISCLAIMER +
@@ -80,14 +79,12 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
         address _want,
         string memory _name,
         string memory _symbol,
-        uint256 _approvalDelay,
         uint256 _depositFee
     ) public ERC20(
         string(_name),
         string(_symbol)
     ) {
         want = IERC20(_want);
-        approvalDelay = _approvalDelay;
         constructionTime = block.timestamp;
         depositFee = _depositFee;
        
@@ -104,7 +101,6 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
         initialized = true;
         return true;
     }
-
 
     /**
      * @dev It calculates the total underlying value of {token} held by the system.
@@ -225,7 +221,7 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev It switches the active strat for the strat candidate. After upgrading, proposedTime is set to 24 hours.
+     * @dev It switches the active strat for the strat candidate. After upgrading, approvalDelay is set to 24 hours.
      */
 
     function upgradeStrat() public onlyOwner {
@@ -237,7 +233,7 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
         IStrategy(strategy).retireStrat();
         strategy = stratCandidate.implementation;
         stratCandidate.implementation = address(0);
-        stratCandidate.proposedTime = 86400;
+        approvalDelay = 86400;
 
         earn();
     }
@@ -255,17 +251,13 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
       return true;
     }
 
-
     function incrementWithdrawals(uint _amount) internal returns (bool) {
       uint initial = cumulativeWithdrawals[tx.origin];
       uint newTotal = initial + _amount;
       cumulativeWithdrawals[tx.origin] = newTotal;
       emit WithdrawalsIncremented(tx.origin, _amount, newTotal);
       return true;
-    }
-
-
-    
+    }    
 
     /**
      * @dev Rescues random funds stuck that the strat can't handle.
@@ -277,4 +269,4 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
         uint256 amount = IERC20(_want).balanceOf(address(this));
         IERC20(_want).safeTransfer(msg.sender, amount);
     }
-}
+} 
