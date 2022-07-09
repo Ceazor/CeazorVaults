@@ -17,10 +17,6 @@ cre8rBPTComp = StrategyBeethovenxDualToBeets.deploy()
 #########
 
 #import the common variables
-owner = "0x699675204aFD7Ac2BB146d60e4E3Ddc243843519"
-hotwallet = "0xA67D2c03c3cfe6177a60cAed0a4cfDA7C7a563e0"
-ceazor = "0x3c5Aac016EF2F178e8699D6208796A2D67557fe2"
-deployer = "0x491197f85E73091865c7032cB95593911493f78a"
 
 # vaults, strats, xCheese
 ceazFBEETs = Contract("0x58E0ac1973F9d182058E6b63e7F4979bc333f493")
@@ -39,7 +35,7 @@ cre8rBPT = Contract("0xbb4607beDE4610e80d35C15692eFcB7807A2d0A6")
 
 
 #deploy this
-ceazorVault = CeazorVaultR.deploy(cre8rBPT, "CeazorCre8rBPTVault", "ceazCRE8RBPT", 3600, 0, {'from': accounts[0]}, publish_source=True)
+ceazorVault2 = CeazorVaultR.deploy(cre8rBPT, "CeazorCre8rBPTVault", "ceazCRE8RBPT", 3600, 0, {'from': accounts[0]}, publish_source=True)
 xCheeseTest = ExtraCheese.deploy(ceazFBEETs, cre8r, {'from': owner})
 #Verify the at:
 
@@ -53,9 +49,8 @@ xCheeseTest = ExtraCheese.deploy(ceazFBEETs, cre8r, {'from': owner})
 #8-This is the ID used in the Masterchef that links WANT to Beets rewards. (gauge number), ask or harvest to find.
 #9-This is the poolID that swaps the want, found in READ of the want
 #10-This is the poolID that swaps the reward, CHECK if REWARDS don't match WANT 
-cre8rBPTComp = StrategyBeethovenxDualToBeets.deploy(
-    "0xb06f1e0620f6b83c84a85E3c382442Cd1507F558",
-    "0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83",    
+cre8rBPTComp2 = BPTCompounderToBeets.deploy(
+    "0xb06f1e0620f6b83c84a85E3c382442Cd1507F558",    
     "0x3c5Aac016EF2F178e8699D6208796A2D67557fe2",  
     "0x3c5Aac016EF2F178e8699D6208796A2D67557fe2",
     "0xbb4607beDE4610e80d35C15692eFcB7807A2d0A6",

@@ -95,7 +95,6 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
 
     /**
      * @dev Connects the vault to its initial strategy. One use only.
-     * @notice deployer has only 60 minutes after construction to connect the initial strategy.
      * @param _strategy the vault's initial strategy
      */
 
@@ -191,7 +190,7 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
      * tokens are burned in the process.
      */
     function withdraw(uint256 _shares) public nonReentrant {
-      require(_shares > 0, "please provide amount");
+      require(_shares > 0, "you'v no deposits in this wallet");
         uint256 r = (balance().mul(_shares)).div(totalSupply());
         _burn(msg.sender, _shares);
 
@@ -226,9 +225,7 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev It switches the active strat for the strat candidate. After upgrading, the
-     * candidate implementation is set to the 0x00 address, and proposedTime to a time
-     * happening in +100 years for safety.
+     * @dev It switches the active strat for the strat candidate. After upgrading, proposedTime is set to 24 hours.
      */
 
     function upgradeStrat() public onlyOwner {
@@ -240,7 +237,7 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
         IStrategy(strategy).retireStrat();
         strategy = stratCandidate.implementation;
         stratCandidate.implementation = address(0);
-        stratCandidate.proposedTime = 5000000000;
+        stratCandidate.proposedTime = 86400;
 
         earn();
     }

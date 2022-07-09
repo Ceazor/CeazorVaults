@@ -16,15 +16,14 @@ import "../../interfaces/IBalancerVault.sol";
 import "../../interfaces/IBeetRewarder.sol";
 import "../strategies/FeeManager.sol";
 
-contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
+contract BPTCompounderToBeets  is FeeManager, Pausable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
     // Tokens used
     address public want;
     address public Beets = address(0xF24Bcf4d1e507740041C9cFd2DddB29585aDCe1e); //beets
-    address public native = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83); //wftm
-    address public input;
+    address public native = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83); //wftm but if pool doesnt use need to change this
     address public reward;
     address[] public lpTokens;
     address public unirouter = address(0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce);         // Beethoven Swap route (The VAULT)
@@ -45,7 +44,7 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
     IBalancerVault.SwapKind public swapKind;
     IBalancerVault.FundManagement public funds;
 
-    bool public harvestOnDeposit;
+    bool public harvestOnDeposit = bool(true);
     uint256 public lastHarvest;
 
     event StratHarvest(address indexed harvester, uint256 wantHarvested, uint256 tvl);
@@ -53,8 +52,7 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
     event Withdraw(uint256 tvl);
 
     constructor(
-        address _vault,             // ?????????????????????????????????????????? - ceazCRE8RF-Major
-        address _input,             // 0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83 - wFTM
+        address _vault,             // 0xb06f1e0620f6b83c84a85E3c382442Cd1507F558 - ceazCRE8RF-Major
         address _strategist,        // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor
         address _perFeeRecipient,   // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor
         address _want,              // 0xbb4607beDE4610e80d35C15692eFcB7807A2d0A6 - CRE8RFMajor BPT
@@ -66,16 +64,17 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
 
 
     ) {  
-        wantPoolId = _wantPoolId;
-        rewardSwapPoolId = _rewardPoolId;
-        perFeeRecipient = _perFeeRecipient;
+        vault = _vault;
         strategist = _strategist;
-        chefPoolId = _chefPoolId;
-        input = _input; //!!!! This is preset to wFTM above, so if the pool doesn't have wFTM this will not work
+        perFeeRecipient = _perFeeRecipient;
         want = _want;
-        lpTokens = [input, reward];  // !!!this may contain more than 2 tokens
         reward = _reward;
         rewarder = _rewarder;
+        chefPoolId = _chefPoolId;
+        wantPoolId = _wantPoolId;
+        rewardSwapPoolId = _rewardPoolId;
+        
+        (lpTokens,,) = IBalancerVault(unirouter).getPoolTokens(wantPoolId);
         swapKind = IBalancerVault.SwapKind.GIVEN_IN;
         funds = IBalancerVault.FundManagement(address(this), false, payable(address(this)), false);
 
@@ -123,20 +122,20 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
         }
     }
 
-    function harvest() external virtual {
+    function harvest() internal virtual {
         _harvest(tx.origin);
     }
 
-    // function harvest(address callFeeRecipient) external virtual {
-    //     _harvest(callFeeRecipient);
-    // }
+    function harvest(address callFeeRecipient) external virtual {
+        _harvest(callFeeRecipient);
+    }
 
     function managerHarvest() external onlyOwner {
         _harvest(tx.origin);
     }
 
     // compounds earnings and charges performance fee
-    function _harvest(address callFeeRecipient) internal whenNotPaused {
+    function _harvest(address callFeeRecipient) public whenNotPaused {
         IBeethovenxChef(chef).harvest(chefPoolId, address(this));
         uint256 BeetsBal = IERC20(Beets).balanceOf(address(this));   // beets harvest redundant as it calls in chargeFees
         uint256 rewardBal = IERC20(reward).balanceOf(address(this));   // cre8r harvest redundant
@@ -163,7 +162,7 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
             balancerSwap(rewardSwapPoolId, reward, native, rewardBal);  //swaps all the cre8r for wftm
         }
         // ceazor made total fee variable
-        uint256 _FeesInNativeBal = IERC20(native).balanceOf(address(this)).mul(totalFee).div(1000); //assigns balance of wftm
+        uint256 _FeesInNativeBal = IERC20(native).balanceOf(address(this)).mul(totalFee).div(1000); //gets balance of wftm
 
         uint256 callFeeAmount = _FeesInNativeBal.mul(callFee).div(MAX_FEE); 
         IERC20(native).safeTransfer(callFeeRecipient, callFeeAmount); //calcs callfee and transfers
@@ -226,30 +225,6 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
         uint256 BeetsBal = IBeethovenxChef(chef).pendingBeets(chefPoolId, address(this));
         uint256 rewardBal = IBeetRewarder(rewarder).pendingToken(chefPoolId, address(this));
         return (BeetsBal, rewardBal);
-    }
-
-    // native reward amount for calling harvest
-    function callReward() public returns (uint256) {
-        (uint256 BeetsBal, uint256 rewardBal) = rewardsAvailable();
-        uint256 nativeOut;
-        if (BeetsBal > 0) {
-            nativeOut = balancerSwap(beetsSwapPoolId, Beets, native, BeetsBal);
-        }
-        if (rewardBal > 0) {
-            nativeOut += balancerSwap(rewardSwapPoolId, reward, native, rewardBal);
-        }
-
-        return nativeOut.mul(totalFee).div(1000).mul(callFee).div(MAX_FEE);
-    }
-
-    function setHarvestOnDeposit(bool _harvestOnDeposit) external onlyOwner {
-        harvestOnDeposit = _harvestOnDeposit;
-
-        if (harvestOnDeposit) {
-            setWithdrawalFee(0);
-        } else {
-            setWithdrawalFee(10);
-        }
     }
 
     // called as part of strat migration. Sends all the available funds back to the vault.
@@ -317,22 +292,22 @@ contract StrategyBeethovenxDualToBeets is FeeManager, Pausable {
         vault = _vault;
     }
 
-
+    function setHarvestOnDeposit(bool _harvestOnDeposit) external onlyOwner {
+        harvestOnDeposit = _harvestOnDeposit;
+    }
 
 
     function _giveAllowances() internal {
         IERC20(want).safeApprove(chef, type(uint256).max);
         IERC20(Beets).safeApprove(unirouter, type(uint256).max);
-        IERC20(reward).safeApprove(unirouter, type(uint256).max);
-
-        IERC20(input).safeApprove(unirouter, 0);
-        IERC20(input).safeApprove(unirouter, type(uint256).max);
+        IERC20(reward).safeApprove(unirouter, type(uint256).max);        
+        IERC20(native).safeApprove(unirouter, type(uint256).max);
     }
 
     function _removeAllowances() internal {
         IERC20(want).safeApprove(chef, 0);
         IERC20(Beets).safeApprove(unirouter, 0);
         IERC20(reward).safeApprove(unirouter, 0);
-        IERC20(input).safeApprove(unirouter, 0);
+        IERC20(native).safeApprove(unirouter, 0);
     }
 }
