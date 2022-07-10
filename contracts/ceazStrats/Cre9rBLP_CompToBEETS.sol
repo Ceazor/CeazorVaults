@@ -122,12 +122,8 @@ contract BPTCompounderToBeets  is FeeManager, Pausable {
         }
     }
 
-    function harvest() internal virtual {
+    function harvest() external virtual {
         _harvest(tx.origin);
-    }
-
-    function harvest(address callFeeRecipient) external virtual {
-        _harvest(callFeeRecipient);
     }
 
     function managerHarvest() external onlyOwner {
@@ -135,7 +131,7 @@ contract BPTCompounderToBeets  is FeeManager, Pausable {
     }
 
     // compounds earnings and charges performance fee
-    function _harvest(address callFeeRecipient) public whenNotPaused {
+    function _harvest(address callFeeRecipient) internal whenNotPaused {
         IBeethovenxChef(chef).harvest(chefPoolId, address(this));
         uint256 BeetsBal = IERC20(Beets).balanceOf(address(this));   // beets harvest redundant as it calls in chargeFees
         uint256 rewardBal = IERC20(reward).balanceOf(address(this));   // cre8r harvest redundant
