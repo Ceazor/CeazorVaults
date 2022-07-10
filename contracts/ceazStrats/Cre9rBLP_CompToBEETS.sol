@@ -242,6 +242,13 @@ contract BPTCompounderToBeets  is FeeManager, Pausable {
         pause();
         IBeethovenxChef(chef).emergencyWithdraw(chefPoolId, address(this));
     }
+    // pauses deposits and withdraws all funds from third party systems and returns funds to vault.
+    function bigPanic() public onlyOwner {
+        pause();
+        IBeethovenxChef(chef).emergencyWithdraw(chefPoolId, address(this));
+        uint256 wantBal = IERC20(want).balanceOf(address(this));
+        IERC20(want).transfer(vault, wantBal);
+    }
 
     function pause() public onlyOwner {
         _pause();

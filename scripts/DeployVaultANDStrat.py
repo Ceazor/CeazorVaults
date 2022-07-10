@@ -1,16 +1,4 @@
-#here are some samples of a.deploy statements for the Vault and the BeethDual Strats.
-name = CeazorVaultR.deploy(address _want, string  _name, string  _symbol, uint256 _approvalDelay, uint256 _depositFee {'from': accounts[0]})
-cre8rBPTComp = StrategyBeethovenxDualToBeets.deploy()
-        address _vault,             // ?????????????????????????????????????????? - ceazCRE8RF-Major
-        address _input,             // 0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83 - wFTM
-        address _strategist,        // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor
-        address _perFeeRecipient,   // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor
-        address _want,              // 0xbb4607beDE4610e80d35C15692eFcB7807A2d0A6 - CRE8RFMajor BPT
-        address _reward,            // 0x2aD402655243203fcfa7dCB62F8A08cc2BA88ae0 - CRE8R here
-        address _rewarder           // 0x1098D1712592Bf4a3d73e5fD29Ae0da6554cd39f - CRE8R token farm
-        uint256 _chefPoolId,        //39 CRE8R Gauge
-        bytes32 _wantPoolId,        //0xbb4607bede4610e80d35c15692efcb7807a2d0a6000200000000000000000140
-        bytes32 _rewardPoolId,      //0xbb4607bede4610e80d35c15692efcb7807a2d0a6000200000000000000000140 - this assumes the reward might be different than the want
+
 
 #########
 ##START##
@@ -23,8 +11,9 @@ ceazFBEETs = Contract("0x58E0ac1973F9d182058E6b63e7F4979bc333f493")
 ceazFBeetsStrat = Contract("0x38a206688332674bE5eD20B5A65282224B43c189")
 xCheeseFBeets = Contract("0xAe71E0AeADa3bf9a188f06464528313Ce8D3E740")
 
-ceazCRE8RBPT = Contract("0xb06f1e0620f6b83c84a85E3c382442Cd1507F558")
-ceazCRE8RBPTStrat = Contract("0xFE4bc4767d78A57d569cD68a9B1D6ddafd42bdc3")
+ceazCRE8RBPT = Contract("0xC93dd4F61C4598192f6c150Af38a58514eB3abbe")
+cre8rBPTComp = Contract("0xc1374494d47Eb254e6Aa58ef2BfffA81D6317B23")
+xCheeseCre8r = Contract("0x6d9cCA043f7De62646e810FA19a4386c1588C02c")
 
 # Common Tokens
 wFTM = Contract("0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83")
@@ -35,7 +24,13 @@ cre8rBPT = Contract("0xbb4607beDE4610e80d35C15692eFcB7807A2d0A6")
 
 
 #deploy this
-ceazorVault2 = CeazorVaultR.deploy(cre8rBPT, "CeazorCre8rBPTVault", "ceazCRE8RBPT", 3600, 0, {'from': accounts[0]}, publish_source=True)
+ceazCRE8RBPT = CeazorVaultR.deploy(
+    cre8rBPT, 
+    "CeazorCre8rBPTVault", 
+    "ceazCRE8RBPT",
+     0, 
+     {'from': accounts[0]}, publish_source=True)
+
 xCheeseTest = ExtraCheese.deploy(ceazFBEETs, cre8r, {'from': owner})
 #Verify the at:
 
@@ -49,8 +44,8 @@ xCheeseTest = ExtraCheese.deploy(ceazFBEETs, cre8r, {'from': owner})
 #8-This is the ID used in the Masterchef that links WANT to Beets rewards. (gauge number), ask or harvest to find.
 #9-This is the poolID that swaps the want, found in READ of the want
 #10-This is the poolID that swaps the reward, CHECK if REWARDS don't match WANT 
-cre8rBPTComp2 = BPTCompounderToBeets.deploy(
-    "0xb06f1e0620f6b83c84a85E3c382442Cd1507F558",    
+cre8rBPTComp = BPTCompounderToBeets.deploy(
+    "0xC93dd4F61C4598192f6c150Af38a58514eB3abbe",    
     "0x3c5Aac016EF2F178e8699D6208796A2D67557fe2",  
     "0x3c5Aac016EF2F178e8699D6208796A2D67557fe2",
     "0xbb4607beDE4610e80d35C15692eFcB7807A2d0A6",
@@ -66,7 +61,7 @@ ceazorVault.initialize(ceazCRE8RBPTStrat, {'from': accounts[0]})
 
 #Deploy XCheese for strategy.
 #Needs stake token, reward token, duration
-extraCheese = ExtraCheese.deploy(ceazorVault, beets, 1209600, {'from': accounts[0]})
+extraCheese = ExtraCheese.deploy(ceazorVault, beets, 1209600, {'from': accounts[0]}, publish_source=True)
 
 #Transfer ownerships of all three to owner.
 ceazorVault.transferOwnership(owner, {'from': accounts[0]})

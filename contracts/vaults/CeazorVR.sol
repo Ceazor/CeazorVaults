@@ -73,7 +73,6 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
      * @param _want the token to maximize.
      * @param _name the name of the vault token.
      * @param _symbol the symbol of the vault token.
-     * @param _approvalDelay the delay before a new strat can be approved.
      */
     constructor (
         address _want,
