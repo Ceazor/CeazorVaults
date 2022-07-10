@@ -13,6 +13,7 @@ xCheeseFBeets = Contract("0xAe71E0AeADa3bf9a188f06464528313Ce8D3E740")
 
 ceazCRE8RBPT = Contract("0xC93dd4F61C4598192f6c150Af38a58514eB3abbe")
 cre8rBPTComp = Contract("0xc1374494d47Eb254e6Aa58ef2BfffA81D6317B23")
+cre8rBPTComp = Contract("0xBCe87B5bf9f2305f6F4Ce819F61210e8d3b783B6")
 xCheeseCre8r = Contract("0x6d9cCA043f7De62646e810FA19a4386c1588C02c")
 
 # Common Tokens
