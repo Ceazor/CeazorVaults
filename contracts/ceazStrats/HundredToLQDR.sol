@@ -24,6 +24,11 @@ contract HundredToLQDR is FeeManager, Pausable {
     address public native = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83); //wftm but if pool doesnt use need to change this
     address public hToken;
 
+    address public USDC = address(0x04068da6c83afcfa0e13ba15a6696662335d5b75);
+    address public MIM = address(0x82f0B8B456c1A451378467398982d4834b6829c1);
+    address public DAI = address(0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E);
+    address public FRAX = address(0xdc301622e621166BD8E82f2cA0A26c13Ad0BE355);
+
     //farm stuff
     address public LQDRFarm;
     uint256 public LQDRPid;    
@@ -129,7 +134,23 @@ contract HundredToLQDR is FeeManager, Pausable {
             chargeFees(callFeeRecipient);
             sendXCheese();
             uint256 _hndLeft = IERC20(HND).balanceOf(address(this));
-            balancerSwap(HNDSwapPoolId, HND, native, _hndLeft); 
+            balancerSwap(HNDSwapPoolId, HND, native, _hndLeft);
+            //wFTM->USDC on Spookyswap
+            if (want == USDC){
+
+            }
+            //wFTM->MIM on Spookyswap
+            if (want == MIM){
+
+            }
+            //wFTM->DAI on Spookyswap
+            if (want == DAI){
+
+            }
+            //wFTM->FRAX on SpiritSwap
+            if (want == FRAX){
+
+            }
             //<-------------------------------where to swap wFTM for want?
             uint256 wantHarvested = balanceOfWant();
             deposit();
@@ -232,29 +253,25 @@ contract HundredToLQDR is FeeManager, Pausable {
     }
 
     // Sets the xCheeseRecipient address to recieve the BEETs rewards
-    function setxCheeseRecipient(address _xCheeseRecipient) external onlyOwner {
+    function setxCheeseRecipient(address _xCheeseRecipient) public onlyOwner {
         xCheeseRecipient = _xCheeseRecipient;
+    }
+    // Sets the % of HND that are kept and sent to the xCheese Farm
+    function setxCheeseKeepRate(uint256 _xCheeseKeepRate) public onlyOwner {
+        xCheeseKeepRate = _xCheeseKeepRate;
     }
 
     // place to reset where strategist fee goes.
-    function setStrategist(address _strategist) external {
+    function setStrategist(address _strategist) public onlyOwner {
         require(msg.sender == strategist, "!strategist");
         strategist = _strategist;
     }
     // place to reset where performance fee goes.
-    function setperFeeRecipient(address _perFeeRecipient) external onlyOwner {
+    function setperFeeRecipient(address _perFeeRecipient) public onlyOwner {
         perFeeRecipient = _perFeeRecipient;
     }
-    // Beets "the VAULT" rounter
-    function setUnirouter(address _unirouter) external onlyOwner {
-        unirouter = _unirouter;
-    }
-    // place to change the vault. very unlikely.
-    function setVault(address _vault) external onlyOwner {
-        vault = _vault;
-    }
     // to reduce deposit gas cost, this can be turned off.
-    function setHarvestOnDeposit(bool _harvestOnDeposit) external onlyOwner {
+    function setHarvestOnDeposit(bool _harvestOnDeposit) public onlyOwner {
         harvestOnDeposit = _harvestOnDeposit;
     }
 

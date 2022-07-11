@@ -37,16 +37,4 @@ abstract contract FeeManager is Ownable {
 
         withdrawalFee = _fee;
     }
-
-    // this rate determines how much of the profit, post fees, is
-    // is converted back to the reward token and sent to xCheese farms.
-    // this number is to be .div, so if set to 
-    // 0 = nothing will be sent
-    // 1 = ALL profts will be sent ???? can't be set to 1
-    // 2 = half sent
-    // 4 = 25 percent sent
-    function setxCheeseRate(uint256 _rate) public onlyOwner {
-        require(_rate != 1, "can't set this to 1"); 
-        xCheeseRate = _rate;                                     
-    }
 }

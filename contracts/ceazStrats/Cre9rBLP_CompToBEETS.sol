@@ -245,13 +245,11 @@ contract BPTCompounderToBeets  is FeeManager, Pausable {
         uint256 wantBal = IERC20(want).balanceOf(address(this));
         IERC20(want).transfer(vault, wantBal);
     }
-
     function pause() public onlyOwner {
         _pause();
 
         _removeAllowances();
     }
-
     function unpause() external onlyOwner {
         _unpause();
 
@@ -260,43 +258,33 @@ contract BPTCompounderToBeets  is FeeManager, Pausable {
         deposit();
     }
 
-    // Sets the xCheeseRecipient address to recieve the BEETs rewards
-    function setxCheeseRecipient(address _xCheeseRecipient) external onlyOwner {
+    // different set functions
+    function setxCheeseRecipient(address _xCheeseRecipient) public onlyOwner {
         xCheeseRecipient = _xCheeseRecipient;
     }
-
-    /**
-     * @dev Updates address where strategist fee earnings will go.
-     * @param _strategist new strategist address.
-     */
-    function setStrategist(address _strategist) external {
+    function setStrategist(address _strategist) public onlyOwner {
         require(msg.sender == strategist, "!strategist");
         strategist = _strategist;
     }
-        /**
-     * @dev Updates fee recipient.
-     * @param _perFeeRecipient new performance fee recipient address.
-     */
-    function setperFeeRecipient(address _perFeeRecipient) external onlyOwner {
+    function setperFeeRecipient(address _perFeeRecipient) public onlyOwner {
         perFeeRecipient = _perFeeRecipient;
     }
-    /**
-     * @dev Updates router that will be used for swaps.
-     * @param _unirouter new unirouter address.
-     */
-    function setUnirouter(address _unirouter) external onlyOwner {
+    function setUnirouter(address _unirouter) public onlyOwner {
         unirouter = _unirouter;
     }
-    /**
-     * @dev Updates parent vault.
-     * @param _vault new vault address.
-     */
-    function setVault(address _vault) external onlyOwner {
-        vault = _vault;
-    }
-
-    function setHarvestOnDeposit(bool _harvestOnDeposit) external onlyOwner {
+    function setHarvestOnDeposit(bool _harvestOnDeposit) public onlyOwner {
         harvestOnDeposit = _harvestOnDeposit;
+    }
+        // this rate determines how much of the profit, post fees, is
+    // is converted back to the reward token and sent to xCheese farms.
+    // this number is to be .div, so if set to 
+    // 0 = nothing will be sent
+    // 1 = ALL profts will be sent ???? can't be set to 1
+    // 2 = half sent
+    // 4 = 25 percent sent
+    function setxCheeseRate(uint256 _rate) public onlyOwner {
+        require(_rate != 1, "can't set this to 1"); 
+        xCheeseRate = _rate;                                     
     }
 
 
