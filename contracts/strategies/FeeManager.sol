@@ -14,8 +14,8 @@ abstract contract FeeManager is Ownable {
     uint constant public WITHDRAWAL_MAX = 10000;
 
     uint public totalFee = 10;
-    uint public withdrawalFee = 10;
-    uint public callFee = 111;
+    uint public withdrawalFee = 10;                         
+    uint public callFee = 0;                                // preset this to zero
     uint public perFee = MAX_FEE - STRATEGIST_FEE - callFee;
     uint public xCheeseRate = 2;
 
@@ -42,7 +42,7 @@ abstract contract FeeManager is Ownable {
     // is converted back to the reward token and sent to xCheese farms.
     // this number is to be .div, so if set to 
     // 0 = nothing will be sent
-    // 1 = ALL profts will be sent ???? brick?? can't be set to 1
+    // 1 = ALL profts will be sent ???? can't be set to 1
     // 2 = half sent
     // 4 = 25 percent sent
     function setxCheeseRate(uint256 _rate) public onlyOwner {
