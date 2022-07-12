@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+import "../../interfaces/IUniswapV2Router01.sol";
 import "../../interfaces/IBalancerVault.sol";
 import "../../interfaces/IHundred.sol";
 import "../../interfaces/ILQDR.sol";
@@ -20,19 +21,20 @@ contract HundredToLQDR is FeeManager, Pausable {
     // essentials
     address public vault; 
     address public want;
+    address public hToken;
     address public HND = address(0x10010078a54396F62c96dF8532dc2B4847d47ED3);    //HND token
     address public native = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83); //wftm but if pool doesnt use need to change this
-    address public hToken;
 
-    address public USDC = address(0x04068da6c83afcfa0e13ba15a6696662335d5b75);
+    address public USDC = address(0x04068DA6C83AFCFA0e13ba15A6696662335D5B75);
     address public MIM = address(0x82f0B8B456c1A451378467398982d4834b6829c1);
     address public DAI = address(0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E);
     address public FRAX = address(0xdc301622e621166BD8E82f2cA0A26c13Ad0BE355);
 
     //farm stuff
     address public LQDRFarm;
-    uint256 public LQDRPid;    
-    address public unirouter = address(0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce);         // HND Swap route (The VAULT on Beets)
+    uint256 public LQDRPid;
+    address public unirouter = address(0xF491e7B69E4244ad4002BC14e878a34207E38c29);       //this is coded to use Spookyswap   
+    address public bRouter = address(0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce);         // HND Swap route (The VAULT on Beets)
     bytes32 public HNDSwapPoolId = bytes32(0x843716e9386af1a26808d8e6ce3948d606ff115a00020000000000000000043a); //HND:wFTM 60/40 BPool
     bytes32 public wantPoolId;
 
@@ -58,7 +60,6 @@ contract HundredToLQDR is FeeManager, Pausable {
         address _want,              // USDC,    MIM,    FRAX,   DAI
         address _hToken,            //
         uint256 _LQDRPid,           // 0,       1,      2,      3 
-        bytes32 _wantPoolId,        //0xbb4607bede4610e80d35c15692efcb7807a2d0a6000200000000000000000140
         address _LQDRFarm           //
         
     ) {  
@@ -69,8 +70,6 @@ contract HundredToLQDR is FeeManager, Pausable {
         hToken = _hToken;
         LQDRPid = _LQDRPid;
         LQDRFarm = _LQDRFarm;
-        wantPoolId = _wantPoolId;
-                
 
         _giveAllowances();
     }
@@ -135,26 +134,10 @@ contract HundredToLQDR is FeeManager, Pausable {
             sendXCheese();
             uint256 _hndLeft = IERC20(HND).balanceOf(address(this));
             balancerSwap(HNDSwapPoolId, HND, native, _hndLeft);
-            //wFTM->USDC on Spookyswap
-            if (want == USDC){
-
-            }
-            //wFTM->MIM on Spookyswap
-            if (want == MIM){
-
-            }
-            //wFTM->DAI on Spookyswap
-            if (want == DAI){
-
-            }
-            //wFTM->FRAX on SpiritSwap
-            if (want == FRAX){
-
-            }
-            //<-------------------------------where to swap wFTM for want?
+            uint256 _nativeBal = IERC20(native).balanceOf(address(this));
+            _swapNativeForWant(_nativeBal);
             uint256 wantHarvested = balanceOfWant();
             deposit();
-
             lastHarvest = block.timestamp;
             emit StratHarvest(msg.sender, wantHarvested, balanceOf()); //tells everyone who did the harvest (they need be paid)
         }
@@ -185,7 +168,35 @@ contract HundredToLQDR is FeeManager, Pausable {
 
     function balancerSwap(bytes32 _poolId, address _tokenIn, address _tokenOut, uint256 _amountIn) internal returns (uint256) {
         IBalancerVault.SingleSwap memory singleSwap = IBalancerVault.SingleSwap(_poolId, swapKind, _tokenIn, _tokenOut, _amountIn, "");
-        return IBalancerVault(unirouter).swap(singleSwap, funds, 1, block.timestamp);
+        return IBalancerVault(bRouter).swap(singleSwap, funds, 1, block.timestamp);
+    }
+
+    function _swapNativeForWant(uint256 _nativeBal) internal
+        returns (uint256 _amountWant, uint256 _slippageWant)
+    {
+        uint256[] memory amounts =
+            IUniswapV2Router01(unirouter).swapExactETHForTokens(
+                _nativeBal,
+                getTokenOutPath(address(native), address(want)),
+                address(this),
+                block.timestamp
+            );
+        _slippageWant = _amountWant.sub(amounts[amounts.length - 1]);
+    }
+    function getTokenOutPath(address _token_in, address _token_out)
+        internal
+        view
+        returns (address[] memory _path)
+    {
+        bool is_weth = _token_in == address(native) || _token_out == address(native);
+        _path = new address[](is_weth ? 2 : 3);
+        _path[0] = _token_in;
+        if (is_weth) {
+            _path[1] = _token_out;
+        } else {
+            _path[1] = address(native);
+            _path[2] = _token_out;
+        }
     }
 
     // calculate the total underlaying 'want' held by the strat.
@@ -206,10 +217,10 @@ contract HundredToLQDR is FeeManager, Pausable {
         return _amount;
     }
 
-    // returns rewards unharvested <--------------------------------------------------------------------NEEDS WORK
-    function rewardsAvailable() public view returns (uint256 hTkns, uint256 rewardBal) {
-        (,uint256 rewards) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this));
-        return (,rewardBal);
+    // returns rewards unharvested 
+    function rewardsAvailable() public view returns (int256) {
+        (,int256 rewardBal) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this));
+        return (rewardBal);
     }
 
     // called as part of strat migration. Sends all the available funds back to the vault.
@@ -275,15 +286,18 @@ contract HundredToLQDR is FeeManager, Pausable {
         harvestOnDeposit = _harvestOnDeposit;
     }
 
+    //sets global allowances during deployment, and revokes when paused/panic'd.
     function _giveAllowances() internal {
         IERC20(want).safeApprove(LQDRFarm, type(uint256).max);
-        IERC20(HND).safeApprove(unirouter, type(uint256).max);
+        IERC20(HND).safeApprove(bRouter, type(uint256).max);
+        IERC20(native).safeApprove(bRouter, type(uint256).max);
         IERC20(native).safeApprove(unirouter, type(uint256).max);
-    }
 
+    }
     function _removeAllowances() internal {
         IERC20(want).safeApprove(LQDRFarm, 0);
-        IERC20(HND).safeApprove(unirouter, 0);
+        IERC20(HND).safeApprove(bRouter, 0);
+        IERC20(native).safeApprove(bRouter, 0);
         IERC20(native).safeApprove(unirouter, 0);
     }
 }

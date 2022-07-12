@@ -2,89 +2,73 @@ import pytest
 from brownie import config
 from brownie import Contract
 
-
-@pytest.fixture
-def gov(accounts):
-    yield accounts.at("0xFEB4acf3df3cDEA7399794D0869ef76A6EfAff52", force=True)
-
-
-@pytest.fixture
-def user(accounts):
-    yield accounts[0]
-
-
-@pytest.fixture
-def rewards(accounts):
-    yield accounts[1]
-
-
-@pytest.fixture
-def guardian(accounts):
-    yield accounts[2]
-
-
-@pytest.fixture
-def management(accounts):
-    yield accounts[3]
-
+@pytest.fxiture
+def owner(accounts):
+    yield accounts.at("0x699675204aFD7Ac2BB146d60e4E3Ddc243843519")
 
 @pytest.fixture
 def strategist(accounts):
-    yield accounts[4]
-
-
-@pytest.fixture
-def keeper(accounts):
-    yield accounts[5]
-
+    yield accounts.at("0x3c5Aac016EF2F178e8699D6208796A2D67557fe2")
 
 @pytest.fixture
-def token():
-    token_address = "0x6b175474e89094c44da98b954eedeac495271d0f"  # this should be the address of the ERC-20 used by the strategy/vault (DAI)
+def perFeeRecipient(accounts):
+    yield accounts.at("0xA67D2c03c3cfe6177a60cAed0a4cfDA7C7a563e0")
+
+@pytest.fixture
+def want():
+    token_address = "0x04068da6c83afcfa0e13ba15a6696662335d5b75"  
     yield Contract(token_address)
 
-
 @pytest.fixture
-def amount(accounts, token, user):
-    amount = 10_000 * 10 ** token.decimals()
-    # In order to get some funds for the token you are about to use,
-    # it impersonate an exchange address to use it's funds.
-    reserve = accounts.at("0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643", force=True)
-    token.transfer(user, amount, {"from": reserve})
-    yield amount
-
-
-@pytest.fixture
-def weth():
-    token_address = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+def hToken():
+    token_address = "0x243E33aa7f6787154a8E59d3C27a66db3F8818ee"
     yield Contract(token_address)
 
+@pytest.fixture
+def LQDRPid():
+    LQDRPid = 0
+    yield (LQDRPid) 
 
 @pytest.fixture
-def weth_amout(user, weth):
-    weth_amout = 10 ** weth.decimals()
-    user.transfer(weth, weth_amout)
-    yield weth_amout
-
+def LQDRFarm(): 
+    LQDRFarm = "0x9a07fb107b9d8ea8b82ecf453efb7cfb85a66ce9"
+    yield (LQDRFarm) 
 
 @pytest.fixture
-def vault(pm, gov, rewards, guardian, management, token):
-    Vault = pm(config["dependencies"][0]).Vault
-    vault = guardian.deploy(Vault)
-    vault.initialize(token, gov, rewards, "", "", guardian, management)
-    vault.setDepositLimit(2 ** 256 - 1, {"from": gov})
-    vault.setManagement(management, {"from": gov})
+def vault(want, name, symbol):
+    vault = CeazorVaultR.deploy(want, name, symbol)
     yield vault
 
-
 @pytest.fixture
-def strategy(strategist, keeper, vault, Strategy, gov):
-    strategy = strategist.deploy(Strategy, vault)
-    strategy.setKeeper(keeper)
-    vault.addStrategy(strategy, 10_000, 0, 2 ** 256 - 1, 1_000, {"from": gov})
+def strategy(vault, strategist, perFeeRecipient, want, hToken, LQDRPid, LQDRFarm):
+    strategy = HundredToLQDR.deploy(vault, strategist, perFeeRecipient, want, hToken, LQDRPid, LQDRFarm)
+    vault.initialize(strategy, {"from": owner})
     yield strategy
-
 
 @pytest.fixture(scope="session")
 def RELATIVE_APPROX():
     yield 1e-5
+
+
+
+# ceazor = ("0x3c5Aac016EF2F178e8699D6208796A2D67557fe2")
+# USDC = Contract("0x04068da6c83afcfa0e13ba15a6696662335d5b75")
+# hUSDC = Contract("0x243E33aa7f6787154a8E59d3C27a66db3F8818ee")
+# hUSDCtoLQDR = Contract('0x9a07fb107b9d8ea8b82ecf453efb7cfb85a66ce9')
+
+# MIM = Contract('0x82f0B8B456c1A451378467398982d4834b6829c1')
+# hMIM = Contract('0xa8cD5D59827514BCF343EC19F531ce1788Ea48f8')
+# hMIMtoLQDR = Contract('0xed566b089fc80df0e8d3e0ad3ad06116433bf4a7')
+
+# FRAX = Contract('0xdc301622e621166BD8E82f2cA0A26c13Ad0BE355')
+# hFRAX = Contract('0xb4300e088a3AE4e624EE5C71Bc1822F68BB5f2bc')
+# hFRAXtoLQDR = Contract('0x669F5f289A5833744E830AD6AB767Ea47A3d6409')
+
+# DAI = Contract('0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E')
+# hDAI = Contract('0x8e15a22853A0A60a0FBB0d875055A8E66cff0235')
+# hDAItoLQDR = Contract('0x79364e45648db09ee9314e47b2fd31c199eb03b9')
+
+
+
+
+

@@ -16,6 +16,6 @@ interface IHundred {
     function balanceOf(address owner) external returns (uint256);
     function redeem(uint redeemTokens) external returns (uint);
     function redeemUnderlying(uint redeemAmount) external returns (uint);
-    function exchangeRateStored() external returns(uint256);
+    function exchangeRateStored() external view returns(uint256);
 
 }

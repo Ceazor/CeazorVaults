@@ -15,7 +15,7 @@ interface ILQDR {
     function deposit(uint256 pid, uint256 amount, address to) external; 
     function withdraw(uint256 amount, uint256 pid, address to) external returns (uint256); //withdraws leaving rewards
     function harvest(uint256 pid, address to) external returns(uint256); //claims rewards
-    function userInfo(uint256 pid, address to)external returns(uint256, int256); // returns hTOKENs in farm, and RewardDebt
+    function userInfo(uint256 pid, address to)external view returns(uint256, int256); // returns hTOKENs in farm, and RewardDebt
     //withdraws amount of hTKNS inputed and harvest all rewards
     function withdrawAndHarvest(uint256 pid, uint256 amount, address to) external returns(uint256, uint256); 
 }
