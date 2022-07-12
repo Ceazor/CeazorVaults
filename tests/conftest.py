@@ -2,7 +2,7 @@ import pytest
 from brownie import config
 from brownie import Contract
 
-@pytest.fxiture
+@pytest.fixture
 def owner(accounts):
     yield accounts.at("0x699675204aFD7Ac2BB146d60e4E3Ddc243843519")
 
