@@ -26,7 +26,7 @@ contract BPTCompounderToBeets  is FeeManager, Pausable {
     address public native = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83); //wftm but if pool doesnt use need to change this
     address public reward;
     address[] public lpTokens;
-    address public unirouter = address(0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce);         // Beethoven Swap route (The VAULT)
+    address public bRouter = address(0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce);         // Beethoven Swap route (The VAULT)
     address public vault;                                                                   // The vault this strat is for
     address public perFeeRecipient;                                                         // Who gets the performance fee
     address public strategist;                                                              // Who gets the strategy fee
@@ -74,7 +74,7 @@ contract BPTCompounderToBeets  is FeeManager, Pausable {
         wantPoolId = _wantPoolId;
         rewardSwapPoolId = _rewardPoolId;
         
-        (lpTokens,,) = IBalancerVault(unirouter).getPoolTokens(wantPoolId);
+        (lpTokens,,) = IBalancerVault(bRouter).getPoolTokens(wantPoolId);
         swapKind = IBalancerVault.SwapKind.GIVEN_IN;
         funds = IBalancerVault.FundManagement(address(this), false, payable(address(this)), false);
 
@@ -185,7 +185,7 @@ contract BPTCompounderToBeets  is FeeManager, Pausable {
 
     function balancerSwap(bytes32 _poolId, address _tokenIn, address _tokenOut, uint256 _amountIn) internal returns (uint256) {
         IBalancerVault.SingleSwap memory singleSwap = IBalancerVault.SingleSwap(_poolId, swapKind, _tokenIn, _tokenOut, _amountIn, "");
-        return IBalancerVault(unirouter).swap(singleSwap, funds, 1, block.timestamp);
+        return IBalancerVault(bRouter).swap(singleSwap, funds, 1, block.timestamp);
     }
 
     function balancerJoin(bytes32 _poolId, address _tokenIn, uint256 _amountIn) internal {    
@@ -197,7 +197,7 @@ contract BPTCompounderToBeets  is FeeManager, Pausable {
         bytes memory userData = abi.encode(1, amounts, 1);   
 
         IBalancerVault.JoinPoolRequest memory request = IBalancerVault.JoinPoolRequest(lpTokens, amounts, userData, false);
-        IBalancerVault(unirouter).joinPool(_poolId, address(this), address(this), request);
+        IBalancerVault(bRouter).joinPool(_poolId, address(this), address(this), request);
     }
 
     // calculate the total underlaying 'want' held by the strat.
@@ -259,9 +259,6 @@ contract BPTCompounderToBeets  is FeeManager, Pausable {
     }
 
     // different set functions
-    function setxCheeseRecipient(address _xCheeseRecipient) public onlyOwner {
-        xCheeseRecipient = _xCheeseRecipient;
-    }
     function setStrategist(address _strategist) public onlyOwner {
         require(msg.sender == strategist, "!strategist");
         strategist = _strategist;
@@ -269,8 +266,8 @@ contract BPTCompounderToBeets  is FeeManager, Pausable {
     function setperFeeRecipient(address _perFeeRecipient) public onlyOwner {
         perFeeRecipient = _perFeeRecipient;
     }
-    function setUnirouter(address _unirouter) public onlyOwner {
-        unirouter = _unirouter;
+    function setbRouter(address _bRouter) public onlyOwner {
+        bRouter = _bRouter;
     }
     function setHarvestOnDeposit(bool _harvestOnDeposit) public onlyOwner {
         harvestOnDeposit = _harvestOnDeposit;
@@ -286,19 +283,21 @@ contract BPTCompounderToBeets  is FeeManager, Pausable {
         require(_rate != 1, "can't set this to 1"); 
         xCheeseRate = _rate;                                     
     }
-
+    function setxCheeseRecipient(address _xCheeseRecipient) public onlyOwner {
+        xCheeseRecipient = _xCheeseRecipient;
+    }
 
     function _giveAllowances() internal {
         IERC20(want).safeApprove(chef, type(uint256).max);
-        IERC20(Beets).safeApprove(unirouter, type(uint256).max);
-        IERC20(reward).safeApprove(unirouter, type(uint256).max);        
-        IERC20(native).safeApprove(unirouter, type(uint256).max);
+        IERC20(Beets).safeApprove(bRouter, type(uint256).max);
+        IERC20(reward).safeApprove(bRouter, type(uint256).max);        
+        IERC20(native).safeApprove(bRouter, type(uint256).max);
     }
 
     function _removeAllowances() internal {
         IERC20(want).safeApprove(chef, 0);
-        IERC20(Beets).safeApprove(unirouter, 0);
-        IERC20(reward).safeApprove(unirouter, 0);
-        IERC20(native).safeApprove(unirouter, 0);
+        IERC20(Beets).safeApprove(bRouter, 0);
+        IERC20(reward).safeApprove(bRouter, 0);
+        IERC20(native).safeApprove(bRouter, 0);
     }
 }
