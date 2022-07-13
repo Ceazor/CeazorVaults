@@ -1,7 +1,7 @@
-from CeazorVaults.tests import HundredToLQDR
-from CeazorVaults.tests.conftest import vault
+from CeazorVaultR.tests import HundredToLQDR
+from CeazorVaultR.tests.conftest import vault
 import brownie
-from brownie import Contract
+from brownie import Contract, IHundred, ILQDR, IBalancerVault, IUniswapV2Router01
 import pytest
 
 
