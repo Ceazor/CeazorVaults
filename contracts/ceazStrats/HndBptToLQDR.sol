@@ -21,8 +21,8 @@ contract HndBptToLQDR is FeeManager, Pausable {
     // essentials
     address public vault; 
     address public want;
-    address public HND; = address(0x10010078a54396F62c96dF8532dc2B4847d47ED3)     //HND token
-    address public liHND; = address(0xA147268f35Db4Ae3932eabe42AF16C36A8B89690)   //liHND
+    address public HND = address(0x10010078a54396F62c96dF8532dc2B4847d47ED3);     //HND token
+    address public liHND = address(0xA147268f35Db4Ae3932eabe42AF16C36A8B89690);   //liHND
     address public LQDR = address(0x10b620b2dbAC4Faa7D7FFD71Da486f5D44cd86f9);    //LQDR token
     address public native = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83);  //wftm but if pool doesnt use need to change this
 
@@ -52,8 +52,8 @@ contract HndBptToLQDR is FeeManager, Pausable {
     constructor(
         address _vault,             //  
         address _want,              // 0x8F6a658056378558fF88265f7c9444A0FB4DB4be HND:liHND BPT
-        bytes _wantSwapPoolId,      // 0x8f6a658056378558ff88265f7c9444a0fb4db4be0002000000000000000002b8
-        uint256 _LQDRPid,           // 0000000000000000000000000000000000000000000000000000000000000027
+        bytes32 _wantSwapPoolId,    // 0x8f6a658056378558ff88265f7c9444a0fb4db4be0002000000000000000002b8
+        uint256 _LQDRPid,           // 39
         address _LQDRFarm           // 0x6e2ad6527901c9664f016466b8da1357a004db0f 
         
     ) {  
@@ -65,9 +65,12 @@ contract HndBptToLQDR is FeeManager, Pausable {
 
         _giveAllowances();
     }
-    
-    // puts the funds to work
-    function deposit() public whenNotPaused {
+
+    function deposit() external {
+        require(!depositsPaused, "cannot deposit at this time");
+        _deposit();
+    }
+    function _deposit() internal whenNotPaused {
         uint256 _wantBal = IERC20(want).balanceOf(address(this));
         if (_wantBal > 0) {
             ILQDR(LQDRFarm).deposit(LQDRPid, _wantBal, (address(this)));
@@ -81,7 +84,8 @@ contract HndBptToLQDR is FeeManager, Pausable {
         uint256 _wantBal = IERC20(want).balanceOf(address(this));
 
         if (_wantBal < _amount) {
-            ILQDR(LQDRFarm).withdraw(_hTknNeed, LQDRPid, (address(this)));
+            uint256 _TknNeed = _amount.sub(_wantBal);
+            ILQDR(LQDRFarm).withdraw(_TknNeed, LQDRPid, (address(this)));
             _wantBal = IERC20(want).balanceOf(address(this));
         }
 
@@ -90,18 +94,18 @@ contract HndBptToLQDR is FeeManager, Pausable {
         }
 
         if (tx.origin != owner() && !paused()) {
-            uint256 withdrawalFeeAmount = wantBal.mul(withdrawalFee).div(WITHDRAWAL_MAX);
+            uint256 withdrawalFeeAmount = _wantBal.mul(withdrawalFee).div(WITHDRAWAL_MAX);
             _wantBal = _wantBal.sub(withdrawalFeeAmount);
         }
         //return want to vault
-        IERC20(_want).safeTransfer(vault, _amount);
+        IERC20(want).safeTransfer(vault, _wantBal);
 
         emit Withdraw(balanceOf());
     }
 
     function beforeDeposit() external {
         if (harvestOnDeposit) {
-            require(msg.sender == vault, "!vault");  //makes sure the vault is the only one that can do quick preDeposit Harvest
+            require(msg.sender == vault, "anon, your not the vault!");  //makes sure the vault is the only one that can do quick preDeposit Harvest
             _harvest(tx.origin);
         }
     }
@@ -118,15 +122,14 @@ contract HndBptToLQDR is FeeManager, Pausable {
             uint256 _LQDRLeft = IERC20(LQDR).balanceOf(address(this));
             balancerSwap(LQDRSwapPoolId, LQDR, native, _LQDRLeft);
             uint256 _nativeBal = IERC20(native).balanceOf(address(this));
-            balancerSwap(HNDSwapPoolID, native, HND, _nativeBal);
+            balancerSwap(HNDSwapPoolId, native, HND, _nativeBal);
             uint256 _hndBal = IERC20(HND).balanceOf(address(this));
             balancerJoinWithHnd(_hndBal); 
             uint256 wantHarvested = IERC20(want).balanceOf(address(this));
             deposit();
             lastHarvest = block.timestamp;
             emit StratHarvest(msg.sender, wantHarvested, balanceOf()); //tells everyone about the harvest 
-        }
-    }
+        }    
 
     // performance fees
     function chargeFees() internal {
@@ -165,23 +168,7 @@ contract HndBptToLQDR is FeeManager, Pausable {
         tokens[1] = liHND;
         IBalancerVault.JoinPoolRequest memory request = IBalancerVault.JoinPoolRequest(tokens, amounts, userData, false);
         IBalancerVault(bRouter).joinPool(wantSwapPoolId, address(this), address(this), request);
-
-    function getTokenOutPath(address _token_in, address _token_out)
-        internal
-        view
-        returns (address[] memory _path)
-    {
-        bool is_weth = _token_in == address(native) || _token_out == address(native);
-        _path = new address[](is_weth ? 2 : 3);
-        _path[0] = _token_in;
-        if (is_weth) {
-            _path[1] = _token_out;
-        } else {
-            _path[1] = address(native);
-            _path[2] = _token_out;
-        }
     }
-
     // calculate the total underlaying 'want' held by the strat.
     function balanceOf() public view returns (uint256) {
         return balanceOfWant().add(balanceOfPool());
@@ -195,8 +182,7 @@ contract HndBptToLQDR is FeeManager, Pausable {
 
     // it calculates how much 'want' the strategy has working in the farm.
     function balanceOfPool() public view returns (uint256) {
-        (uint256 _htkns,) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this));
-        uint256 _amount = _htkns.mul(IHundred(hToken).exchangeRateStored());
+        (uint256 _amount,) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this));        
         return _amount;
     }
 
@@ -209,9 +195,8 @@ contract HndBptToLQDR is FeeManager, Pausable {
     // called as part of strat migration. Sends all the available funds back to the vault.
     function retireStrat() external {
         require(msg.sender == vault, "anon, you not the vault!"); //makes sure that only the vault can retire a strat
-        (uint256 hTkns,) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this)); 
-        ILQDR(LQDRFarm).withdrawAndHarvest(LQDRPid, hTkns, address(this));
-        IHundred(hToken).redeem(hTkns);
+        (uint256 Tkns,) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this)); 
+        ILQDR(LQDRFarm).withdrawAndHarvest(LQDRPid, Tkns, address(this));
         uint256 wantBal = IERC20(want).balanceOf(address(this));
         IERC20(want).transfer(vault, wantBal);
     }
@@ -268,13 +253,25 @@ contract HndBptToLQDR is FeeManager, Pausable {
         harvestOnDeposit = _harvestOnDeposit;
     }
 
+    //SWEEPERS
+    function inCaseTokensGetStuck(address _token) external onlyOwner {
+        uint256 amount = IERC20(_token).balanceOf(address(this));
+        inCaseTokensGetStuck(_token, msg.sender, amount);
+    }
+
+    // dev. can you do something?
+    function inCaseTokensGetStuck(address _token, address _to, uint _amount) public onlyOwner {
+        require(_token != address(want), "you gotta rescue your own deposits");
+        IERC20(_token).safeTransfer(_to, _amount);
+    }
+
+
     //sets global allowances during deployment, and revokes when paused/panic'd.
     function _giveAllowances() internal {
         IERC20(want).safeApprove(LQDRFarm, type(uint256).max);
         IERC20(LQDR).safeApprove(bRouter, type(uint256).max);
         IERC20(HND).safeApprove(bRouter, type(uint256).max);
         IERC20(native).safeApprove(bRouter, type(uint256).max);
-        IERC20(native).safeApprove(unirouter, type(uint256).max);
 
     }
     function _removeAllowances() internal {
@@ -282,6 +279,5 @@ contract HndBptToLQDR is FeeManager, Pausable {
         IERC20(LQDR).safeApprove(bRouter, 0);
         IERC20(HND).safeApprove(bRouter, 0);
         IERC20(native).safeApprove(bRouter, 0);
-        IERC20(native).safeApprove(unirouter, 0);
     }
 }

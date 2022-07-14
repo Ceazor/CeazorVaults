@@ -64,9 +64,9 @@ contract BPTCompounderToBeetsV2  is FeeManager, Pausable {
         address _want,              // 0xbb4607beDE4610e80d35C15692eFcB7807A2d0A6 - CRE8RFMajor BPT
         address _reward,            // 0x2aD402655243203fcfa7dCB62F8A08cc2BA88ae0 - CRE8R here
         address _rewarder,          // 0x1098D1712592Bf4a3d73e5fD29Ae0da6554cd39f - CRE8R token farm
-        uint256 _chefPoolId,        //39 CRE8R Gauge
-        bytes32 _wantPoolId,        //0xbb4607bede4610e80d35c15692efcb7807a2d0a6000200000000000000000140
-        bytes32 _rewardPoolId       //0xbb4607bede4610e80d35c15692efcb7807a2d0a6000200000000000000000140 - this assumes the reward might be different than the want
+        uint256 _chefPoolId,        // 39 CRE8R Gauge
+        bytes32 _wantPoolId,        // 0xbb4607bede4610e80d35c15692efcb7807a2d0a6000200000000000000000140
+        bytes32 _rewardPoolId       // 0xbb4607bede4610e80d35c15692efcb7807a2d0a6000200000000000000000140 - this assumes the reward might be different than the want
 
 
     ) {  
@@ -88,8 +88,11 @@ contract BPTCompounderToBeetsV2  is FeeManager, Pausable {
         _giveAllowances();
     }
 
-    // puts the funds to work
-    function deposit() public whenNotPaused {
+    function deposit() external {
+        require(!depositsPaused, "cannot deposit at this time");
+        _deposit();
+    }
+    function _deposit() internal whenNotPaused {
         uint256 wantBal = IERC20(want).balanceOf(address(this));
 
         if (wantBal > 0) {
@@ -321,7 +324,7 @@ contract BPTCompounderToBeetsV2  is FeeManager, Pausable {
         xCheeseRecipient = _xCheeseRecipient;
     }
 
-        // yup yup ser.
+    // SWEEPERS yup yup ser
     function inCaseTokensGetStuck(address _token) external onlyOwner {
         uint256 amount = IERC20(_token).balanceOf(address(this));
         inCaseTokensGetStuck(_token, msg.sender, amount);

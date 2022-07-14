@@ -10,10 +10,11 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 //hfUSDTtoLQDR - ?????? no farm yet
 //hFRAXtoLQDR-   0x669F5f289A5833744E830AD6AB767Ea47A3d6409
 //hDAItoLQDR -   0x79364e45648db09ee9314e47b2fd31c199eb03b9
+//liHND:HND -    0x6e2ad6527901c9664f016466b8DA1357a004db0f
 
 interface ILQDR {
     function deposit(uint256 pid, uint256 amount, address to) external; 
-    function withdraw(uint256 amount, uint256 pid, address to) external returns (uint256); //withdraws leaving rewards
+    function withdraw(uint256 pid, uint256 amount, address to) external returns (uint256); //withdraws leaving rewards
     function harvest(uint256 pid, address to) external returns(uint256); //claims rewards
     function userInfo(uint256 pid, address to)external view returns(uint256, int256); // returns hTOKENs in farm, and RewardDebt
     //withdraws amount of hTKNS inputed and harvest all rewards

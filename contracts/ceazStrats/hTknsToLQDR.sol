@@ -14,7 +14,7 @@ import "../../interfaces/IHundred.sol";
 import "../../interfaces/ILQDR.sol";
 import "../strategies/FeeManager.sol";
 
-contract HundredToLQDR is FeeManager, Pausable {
+contract hTokensToLQDR is FeeManager, Pausable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -74,8 +74,11 @@ contract HundredToLQDR is FeeManager, Pausable {
         _giveAllowances();
     }
     
-    // puts the funds to work
-    function deposit() public whenNotPaused {
+    function deposit() external {
+        require(!depositsPaused, "cannot deposit at this time");
+        _deposit();
+    }
+    function _deposit() internal whenNotPaused {
         uint256 wantBal = IERC20(want).balanceOf(address(this));
         if (wantBal > 0) {
             IHundred(hToken).mint(wantBal);
@@ -284,6 +287,18 @@ contract HundredToLQDR is FeeManager, Pausable {
     // to reduce deposit gas cost, this can be turned off.
     function setHarvestOnDeposit(bool _harvestOnDeposit) public onlyOwner {
         harvestOnDeposit = _harvestOnDeposit;
+    }
+
+    //SWEEPERS
+    function inCaseTokensGetStuck(address _token) external onlyOwner {
+        uint256 amount = IERC20(_token).balanceOf(address(this));
+        inCaseTokensGetStuck(_token, msg.sender, amount);
+    }
+
+    // dev. can you do something?
+    function inCaseTokensGetStuck(address _token, address _to, uint _amount) public onlyOwner {
+        require(_token != address(want), "you gotta rescue your own deposits");
+        IERC20(_token).safeTransfer(_to, _amount);
     }
 
     //sets global allowances during deployment, and revokes when paused/panic'd.
