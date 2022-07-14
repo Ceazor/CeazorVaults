@@ -287,6 +287,20 @@ contract BPTCompounderToBeets  is FeeManager, Pausable {
         xCheeseRecipient = _xCheeseRecipient;
     }
 
+            // yup yup ser.
+    function inCaseTokensGetStuck(address _token) external onlyOwner {
+        uint256 amount = IERC20(_token).balanceOf(address(this));
+        inCaseTokensGetStuck(_token, msg.sender, amount);
+    }
+
+    // dev. can you do something?
+    function inCaseTokensGetStuck(address _token, address _to, uint _amount) public onlyOwner {
+        if (totalSupply() != 0) {
+            require(_token != address(want), "you gotta rescue your own deposits");
+        }
+        IERC20(_token).safeTransfer(_to, _amount);
+    }
+
     function _giveAllowances() internal {
         IERC20(want).safeApprove(chef, type(uint256).max);
         IERC20(Beets).safeApprove(bRouter, type(uint256).max);

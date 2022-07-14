@@ -304,7 +304,7 @@ contract BPTCompounderToBeetsV2  is FeeManager, Pausable {
         harvestOnDeposit = _harvestOnDeposit;
     }
     // this rate determines how much of the profit, post fees, is
-    // is converted back to the reward token and sent to xCheese farms.
+    // is sent to xCheese farms.
     // this number is to be .div, so if set to 
     // 0 = nothing will be sent
     // 1 = ALL profts will be sent ???? can't be set to 1
@@ -316,6 +316,20 @@ contract BPTCompounderToBeetsV2  is FeeManager, Pausable {
     }
     function setxCheeseRecipient(address _xCheeseRecipient) public onlyOwner {
         xCheeseRecipient = _xCheeseRecipient;
+    }
+
+        // yup yup ser.
+    function inCaseTokensGetStuck(address _token) external onlyOwner {
+        uint256 amount = IERC20(_token).balanceOf(address(this));
+        inCaseTokensGetStuck(_token, msg.sender, amount);
+    }
+
+    // dev. can you do something?
+    function inCaseTokensGetStuck(address _token, address _to, uint _amount) public onlyOwner {
+        if (totalSupply() != 0) {
+            require(_token != address(want), "you gotta rescue your own deposits");
+        }
+        IERC20(_token).safeTransfer(_to, _amount);
     }
 
     function _giveAllowances() internal {
