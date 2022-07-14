@@ -51,6 +51,7 @@ contract BPTCompounderToBeetsV2  is FeeManager, Pausable {
 
     bool public harvestOnDeposit = bool(true);
     uint256 public lastHarvest;
+    
 
     event StratHarvest(address indexed harvester, uint256 wantHarvested, uint256 tvl);
     event Deposit(uint256 tvl);
@@ -217,6 +218,8 @@ contract BPTCompounderToBeetsV2  is FeeManager, Pausable {
         IBalancerVault.JoinPoolRequest memory request = IBalancerVault.JoinPoolRequest(lpTokens, amounts, userData, false);
         IBalancerVault(bRouter).joinPool(_poolId, address(this), address(this), request);
     }
+
+    // tkns are ordered alphanumerically
     function balancerJoinWithBeets(uint256 _amountIn) internal {    
 
         uint256[] memory amounts = new uint256[](2);
@@ -326,9 +329,7 @@ contract BPTCompounderToBeetsV2  is FeeManager, Pausable {
 
     // dev. can you do something?
     function inCaseTokensGetStuck(address _token, address _to, uint _amount) public onlyOwner {
-        if (totalSupply() != 0) {
-            require(_token != address(want), "you gotta rescue your own deposits");
-        }
+        require(_token != address(want), "you gotta rescue your own deposits");
         IERC20(_token).safeTransfer(_to, _amount);
     }
 
