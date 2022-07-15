@@ -67,7 +67,6 @@ contract HndBptToLQDR is FeeManager, Pausable {
     }
 
     function deposit() external {
-        require(!depositsPaused, "cannot deposit at this time");
         _deposit();
     }
     function _deposit() internal whenNotPaused {
@@ -126,7 +125,7 @@ contract HndBptToLQDR is FeeManager, Pausable {
             uint256 _hndBal = IERC20(HND).balanceOf(address(this));
             balancerJoinWithHnd(_hndBal); 
             uint256 wantHarvested = IERC20(want).balanceOf(address(this));
-            deposit();
+            _deposit();
             lastHarvest = block.timestamp;
             emit StratHarvest(msg.sender, wantHarvested, balanceOf()); //tells everyone about the harvest 
         }    
@@ -227,7 +226,7 @@ contract HndBptToLQDR is FeeManager, Pausable {
 
         _giveAllowances();
 
-        deposit();
+        _deposit();
     }
 
     // Sets the xCheeseRecipient address to recieve the BEETs rewards

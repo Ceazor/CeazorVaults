@@ -89,7 +89,6 @@ contract BPTCompounderToBeetsV2  is FeeManager, Pausable {
     }
 
     function deposit() external {
-        require(!depositsPaused, "cannot deposit at this time");
         _deposit();
     }
     function _deposit() internal whenNotPaused {
@@ -146,7 +145,7 @@ contract BPTCompounderToBeetsV2  is FeeManager, Pausable {
             _xCheese();
             addLiquidity();
             uint256 wantHarvested = balanceOfWant();
-            deposit();
+            _deposit();
 
             lastHarvest = block.timestamp;
             emit StratHarvest(msg.sender, wantHarvested, balanceOf()); //tells everyone who did the harvest (they need be paid)
@@ -292,7 +291,7 @@ contract BPTCompounderToBeetsV2  is FeeManager, Pausable {
 
         _giveAllowances();
 
-        deposit();
+        _deposit();
     }
 
     // different set functions
