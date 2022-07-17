@@ -63,6 +63,9 @@ contract HndBptToLQDR is FeeManager, Pausable {
         LQDRPid = _LQDRPid;
         LQDRFarm = _LQDRFarm;
 
+        swapKind = IBalancerVault.SwapKind.GIVEN_IN;
+        funds = IBalancerVault.FundManagement(address(this), false, payable(address(this)), false);
+
         _giveAllowances();
     }
 
@@ -84,7 +87,7 @@ contract HndBptToLQDR is FeeManager, Pausable {
 
         if (_wantBal < _amount) {
             uint256 _TknNeed = _amount.sub(_wantBal);
-            ILQDR(LQDRFarm).withdraw(_TknNeed, LQDRPid, (address(this)));
+            ILQDR(LQDRFarm).withdraw(LQDRPid, _TknNeed, (address(this)));
             _wantBal = IERC20(want).balanceOf(address(this));
         }
 
@@ -116,6 +119,8 @@ contract HndBptToLQDR is FeeManager, Pausable {
     // compounds earnings and charges performance fee
     function _harvest(address callFeeRecipient) internal whenNotPaused {
         ILQDR(LQDRFarm).harvest(LQDRPid, address(this));
+        uint256 _LQDRBal = IERC20(LQDR).balanceOf(address(this));
+        if (_LQDRBal > 0) {
             chargeFees();
             sendXCheese();
             uint256 _LQDRLeft = IERC20(LQDR).balanceOf(address(this));
@@ -128,12 +133,12 @@ contract HndBptToLQDR is FeeManager, Pausable {
             _deposit();
             lastHarvest = block.timestamp;
             emit StratHarvest(msg.sender, wantHarvested, balanceOf()); //tells everyone about the harvest 
-        }    
+        }
+    }    
 
     // performance fees
     function chargeFees() internal {
-        uint256 _lqdrBal = IERC20(LQDR).balanceOf(address(this));        
-        uint256 _totalFees = _lqdrBal.mul(totalFee).div(1000);
+        uint256 _totalFees = IERC20(LQDR).balanceOf(address(this)).mul(totalFee).div(1000);        
         if (_totalFees > 0) {
             balancerSwap(LQDRSwapPoolId, LQDR, native, _totalFees);
             uint256 strategistFee = _totalFees.mul(STRATEGIST_FEE).div(MAX_FEE);
