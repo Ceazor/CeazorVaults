@@ -199,23 +199,24 @@ contract HndBptToLQDR is FeeManager, Pausable {
     // called as part of strat migration. Sends all the available funds back to the vault.
     function retireStrat() external {
         require(msg.sender == vault, "anon, you not the vault!"); //makes sure that only the vault can retire a strat
-        (uint256 Tkns,) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this)); 
-        ILQDR(LQDRFarm).withdrawAndHarvest(LQDRPid, Tkns, address(this));
+        (uint256 _Tkns, int256 _rewards) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this)); 
+        ILQDR(LQDRFarm).withdraw(LQDRPid, _Tkns, address(this));
         uint256 wantBal = IERC20(want).balanceOf(address(this));
         IERC20(want).transfer(vault, wantBal);
+        
     }
 
     // pauses deposits and withdraws all funds from third party systems.
     function LQDRpanic() public onlyOwner {
         pause();
-        (uint256 Tkns,) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this)); 
-        ILQDR(LQDRFarm).withdrawAndHarvest(LQDRPid, Tkns, address(this));
+        (uint256 _Tkns, int256 _rewards) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this)); 
+        ILQDR(LQDRFarm).withdraw(LQDRPid, _Tkns, address(this));
     }
     // pauses deposits and withdraws all funds from third party systems and returns funds to vault.
     function bigPanic() public onlyOwner {
         pause();
-        (uint256 hTkns,) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this)); 
-        ILQDR(LQDRFarm).withdrawAndHarvest(LQDRPid, hTkns, address(this));
+        (uint256 _Tkns, int256 _rewards) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this)); 
+        ILQDR(LQDRFarm).withdraw(LQDRPid, _Tkns, address(this));
         uint256 wantBal = IERC20(want).balanceOf(address(this));
         IERC20(want).transfer(vault, wantBal);
     }

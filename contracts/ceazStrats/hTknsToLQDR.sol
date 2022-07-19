@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "../../interfaces/IUniswapV2Router01.sol";
+import "../../interfaces/ISpookySwap.sol";
 import "../../interfaces/IBalancerVault.sol";
 import "../../interfaces/IHundred.sol";
 import "../../interfaces/ILQDR.sol";
@@ -141,7 +141,7 @@ contract hTokensToLQDR is FeeManager, Pausable {
             uint256 wantHarvested = balanceOfWant();
             _deposit();
             lastHarvest = block.timestamp;
-            emit StratHarvest(msg.sender, wantHarvested, balanceOf()); //tells everyone who did the harvest (they need be paid)
+            emit StratHarvest(msg.sender, wantHarvested, balanceOf()); 
         }
     }
 
@@ -177,7 +177,7 @@ contract hTokensToLQDR is FeeManager, Pausable {
         returns (uint256 _amountWant, uint256 _slippageWant)
     {
         uint256[] memory amounts =
-            IUniswapV2Router01(unirouter).swapExactETHForTokens(
+            ISpookySwap(unirouter).swapExactETHForTokens(
                 _nativeBal,
                 getTokenOutPath(address(native), address(want)),
                 address(this),
