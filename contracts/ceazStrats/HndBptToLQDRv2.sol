@@ -12,13 +12,13 @@ import "../../interfaces/IUniswapV2Router01.sol";
 import "../../interfaces/IBalancerVault.sol";
 import "../../interfaces/IHundred.sol";
 import "../../interfaces/ILQDR.sol";
-import "../strategies/FeeManager.sol";
+import "../utils/FeeManager.sol";
 
-contract HndBptToLQDR is FeeManager, Pausable {
+contract HndBptToLQDRv2 is FeeManager, Pausable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
-    // essentials
+// essentials
     address public vault; 
     address public want;
     address public HND = address(0x10010078a54396F62c96dF8532dc2B4847d47ED3);     //HND token
@@ -26,18 +26,13 @@ contract HndBptToLQDR is FeeManager, Pausable {
     address public LQDR = address(0x10b620b2dbAC4Faa7D7FFD71Da486f5D44cd86f9);    //LQDR token
     address public native = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83);  //wftm but if pool doesnt use need to change this
 
-    //farm stuff
+//farm stuff
     address public LQDRFarm;
     uint256 public LQDRPid;
     address public bRouter = address(0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce);         // HND Swap route (The VAULT on Beets)
     bytes32 public LQDRSwapPoolId = bytes32(0x5e02ab5699549675a6d3beeb92a62782712d0509000200000000000000000138); //LQDR:wFTM 80/20 BPool
     bytes32 public HNDSwapPoolId = bytes32(0x843716e9386af1a26808d8e6ce3948d606ff115a00020000000000000000043a); //HND:wFTM 60/40 BPool 
     bytes32 public wantSwapPoolId;
-
-    address public perFeeRecipient = address(0x699675204aFD7Ac2BB146d60e4E3Ddc243843519);   // preset to owner                                                         // Who gets the performance fee
-    address public strategist = address(0x3c5Aac016EF2F178e8699D6208796A2D67557fe2);        //preset to ceazor                                                              // Who gets the strategy fee
-    address public xCheeseRecipient = address(0x699675204aFD7Ac2BB146d60e4E3Ddc243843519);  // preset to owner CHANGE ASAP
-    uint256 public xCheeseKeepRate = 60;
 
     IBalancerVault.SwapKind public swapKind;
     IBalancerVault.FundManagement public funds;
@@ -50,7 +45,7 @@ contract HndBptToLQDR is FeeManager, Pausable {
     event Withdraw(uint256 tvl);
 
     constructor(
-        address _vault,             //  
+        address _vault,             // 0xd5Ab59A02E8610FCb9E7c7d863A9A2951dB33148 
         address _want,              // 0x8F6a658056378558fF88265f7c9444A0FB4DB4be HND:liHND BPT
         bytes32 _wantSwapPoolId,    // 0x8f6a658056378558ff88265f7c9444a0fb4db4be0002000000000000000002b8
         uint256 _LQDRPid,           // 39
@@ -72,6 +67,13 @@ contract HndBptToLQDR is FeeManager, Pausable {
     function deposit() external {
         _deposit();
     }
+    function beforeDeposit() external {
+        if (harvestOnDeposit) {
+            require(msg.sender == vault, "only the vault anon!");  
+            _harvest();
+        }
+    }
+    
     function _deposit() internal whenNotPaused {
         uint256 _wantBal = IERC20(want).balanceOf(address(this));
         if (_wantBal > 0) {
@@ -79,7 +81,7 @@ contract HndBptToLQDR is FeeManager, Pausable {
         }
     }
   
-    //takes the funds out of the farm and sends them to the vault.
+//takes the funds out of the farm and sends them to the vault.
     function withdraw(uint256 _amount) external {
         require(msg.sender == vault, "ask the vault to withdraw ser!");  //makes sure only the vault can withdraw from the chef
 
@@ -105,23 +107,16 @@ contract HndBptToLQDR is FeeManager, Pausable {
         emit Withdraw(balanceOf());
     }
 
-    function beforeDeposit() external {
-        if (harvestOnDeposit) {
-            require(msg.sender == vault, "anon, your not the vault!");  //makes sure the vault is the only one that can do quick preDeposit Harvest
-            _harvest(tx.origin);
-        }
-    }
-
     function harvest() external virtual {
-        _harvest(tx.origin);
+        _harvest();
     }
 
-    // compounds earnings and charges performance fee
-    function _harvest(address callFeeRecipient) internal whenNotPaused {
+// compounds earnings and charges performance fee
+    function _harvest() internal whenNotPaused {
         ILQDR(LQDRFarm).harvest(LQDRPid, address(this));
         uint256 _LQDRBal = IERC20(LQDR).balanceOf(address(this));
         if (_LQDRBal > 0) {
-            chargeFees();
+            chargeFees(_LQDRBal);
             sendXCheese();
             uint256 _LQDRLeft = IERC20(LQDR).balanceOf(address(this));
             balancerSwap(LQDRSwapPoolId, LQDR, native, _LQDRLeft);
@@ -136,21 +131,20 @@ contract HndBptToLQDR is FeeManager, Pausable {
         }
     }    
 
-    // performance fees
-    function chargeFees() internal {
-        uint256 _totalFees = IERC20(LQDR).balanceOf(address(this)).mul(totalFee).div(1000);        
+// performance fees
+    function chargeFees(uint256 _LQDRBal) internal {
+        uint256 _totalFees = _LQDRBal.mul(totalFee).div(1000);        
         if (_totalFees > 0) {
             balancerSwap(LQDRSwapPoolId, LQDR, native, _totalFees);
             uint256 strategistFee = _totalFees.mul(STRATEGIST_FEE).div(MAX_FEE);
             uint256 perFeeAmount = _totalFees.sub(strategistFee);
-            IERC20(LQDR).safeTransfer(strategist, strategistFee); 
-            IERC20(LQDR).safeTransfer(perFeeRecipient, perFeeAmount);  
+            IERC20(native).safeTransfer(strategist, strategistFee); 
+            IERC20(native).safeTransfer(perFeeRecipient, perFeeAmount);  
         }
     }
-
-    //ceazor keeps a % of HND set by the xCheeseRate
+//ceazor keeps a % of HND set by the xCheeseRate
     function sendXCheese() internal {
-        uint256 forXCheese = IERC20(LQDR).balanceOf(address(this)).mul(xCheeseKeepRate).div(100);
+        uint256 forXCheese = IERC20(LQDR).balanceOf(address(this)).mul(xCheeseRate).div(100);
         if (forXCheese > 0) {
             IERC20(LQDR).safeTransfer(xCheeseRecipient, forXCheese);   // and send them to xCheese
         }
@@ -173,30 +167,30 @@ contract HndBptToLQDR is FeeManager, Pausable {
         IBalancerVault.JoinPoolRequest memory request = IBalancerVault.JoinPoolRequest(tokens, amounts, userData, false);
         IBalancerVault(bRouter).joinPool(wantSwapPoolId, address(this), address(this), request);
     }
-    // calculate the total underlaying 'want' held by the strat.
+// calculate the total underlaying 'want' held by the strat.
     function balanceOf() public view returns (uint256) {
         return balanceOfWant().add(balanceOfPool());
     }
 
-    // it calculates how much 'want' this contract holds.
+// it calculates how much 'want' this contract holds.
     function balanceOfWant() public view returns (uint256) {
         return IERC20(want).balanceOf(address(this));
     }
 
 
-    // it calculates how much 'want' the strategy has working in the farm.
+// it calculates how much 'want' the strategy has working in the farm.
     function balanceOfPool() public view returns (uint256) {
         (uint256 _amount,) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this));        
         return _amount;
     }
 
-    // returns rewards unharvested 
+// returns rewards unharvested 
     function rewardsAvailable() public view returns (int256) {
         (,int256 rewardBal) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this));
         return (rewardBal);
     }
 
-    // called as part of strat migration. Sends all the available funds back to the vault.
+// called as part of strat migration. Sends all the available funds back to the vault.
     function retireStrat() external {
         require(msg.sender == vault, "anon, you not the vault!"); //makes sure that only the vault can retire a strat
         (uint256 _Tkns, int256 _rewards) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this)); 
@@ -206,13 +200,13 @@ contract HndBptToLQDR is FeeManager, Pausable {
         
     }
 
-    // pauses deposits and withdraws all funds from third party systems.
+// pauses deposits and withdraws all funds from third party systems.
     function LQDRpanic() public onlyOwner {
         pause();
         (uint256 _Tkns, int256 _rewards) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this)); 
         ILQDR(LQDRFarm).withdraw(LQDRPid, _Tkns, address(this));
     }
-    // pauses deposits and withdraws all funds from third party systems and returns funds to vault.
+// pauses deposits and withdraws all funds from third party systems and returns funds to vault.
     function bigPanic() public onlyOwner {
         pause();
         (uint256 _Tkns, int256 _rewards) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this)); 
@@ -235,43 +229,25 @@ contract HndBptToLQDR is FeeManager, Pausable {
         _deposit();
     }
 
-    // Sets the xCheeseRecipient address to recieve the BEETs rewards
-    function setxCheeseRecipient(address _xCheeseRecipient) public onlyOwner {
-        xCheeseRecipient = _xCheeseRecipient;
-    }
-    // Sets the % (0~100) of reward that are kept and sent to the xCheese Farm
-    function setxCheeseKeepRate(uint256 _xCheeseKeepRate) public onlyOwner {
-        xCheeseKeepRate = _xCheeseKeepRate;
-    }
-
-    // place to reset where strategist fee goes.
-    function setStrategist(address _strategist) public onlyOwner {
-        require(msg.sender == strategist, "!strategist");
-        strategist = _strategist;
-    }
-    // place to reset where performance fee goes.
-    function setperFeeRecipient(address _perFeeRecipient) public onlyOwner {
-        perFeeRecipient = _perFeeRecipient;
-    }
-    // to reduce deposit gas cost, this can be turned off.
+// to reduce deposit gas cost, this can be turned off.
     function setHarvestOnDeposit(bool _harvestOnDeposit) public onlyOwner {
         harvestOnDeposit = _harvestOnDeposit;
     }
 
-    //SWEEPERS
+//SWEEPERS
     function inCaseTokensGetStuck(address _token) external onlyOwner {
         uint256 amount = IERC20(_token).balanceOf(address(this));
         inCaseTokensGetStuck(_token, msg.sender, amount);
     }
 
-    // dev. can you do something?
+// dev. can you do something?
     function inCaseTokensGetStuck(address _token, address _to, uint _amount) public onlyOwner {
         require(_token != address(want), "you gotta rescue your own deposits");
         IERC20(_token).safeTransfer(_to, _amount);
     }
 
 
-    //sets global allowances during deployment, and revokes when paused/panic'd.
+//sets global allowances during deployment, and revokes when paused/panic'd.
     function _giveAllowances() internal {
         IERC20(want).safeApprove(LQDRFarm, type(uint256).max);
         IERC20(LQDR).safeApprove(bRouter, type(uint256).max);

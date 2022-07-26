@@ -8,17 +8,17 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "../../interfaces/ISpookySwap.sol";
+import "../../interfaces/IUniswapV2Router01.sol";
 import "../../interfaces/IBalancerVault.sol";
 import "../../interfaces/IHundred.sol";
 import "../../interfaces/ILQDR.sol";
-import "../strategies/FeeManager.sol";
+import "../utils/FeeManager.sol";
 
 contract hTokensToLQDR is FeeManager, Pausable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
-    // essentials
+// essentials
     address public vault; 
     address public want;
     address public hToken;
@@ -30,18 +30,13 @@ contract hTokensToLQDR is FeeManager, Pausable {
     address public DAI = address(0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E);
     address public FRAX = address(0xdc301622e621166BD8E82f2cA0A26c13Ad0BE355);
 
-    //farm stuff
+//farm stuff
     address public LQDRFarm;
     uint256 public LQDRPid;
     address public unirouter = address(0xF491e7B69E4244ad4002BC14e878a34207E38c29);       //this is coded to use Spookyswap   
     address public bRouter = address(0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce);         // HND Swap route (The VAULT on Beets)
     bytes32 public HNDSwapPoolId = bytes32(0x843716e9386af1a26808d8e6ce3948d606ff115a00020000000000000000043a); //HND:wFTM 60/40 BPool
     bytes32 public wantPoolId;
-
-    address public perFeeRecipient;                                                         // Who gets the performance fee
-    address public strategist;                                                              // Who gets the strategy fee
-    address public xCheeseRecipient = address(0x699675204aFD7Ac2BB146d60e4E3Ddc243843519);  // preset to owner CHANGE ASAP
-    uint256 public xCheeseKeepRate = 60;
 
     IBalancerVault.SwapKind public swapKind;
     IBalancerVault.FundManagement public funds;
@@ -54,18 +49,14 @@ contract hTokensToLQDR is FeeManager, Pausable {
     event Withdraw(uint256 tvl);
 
     constructor(
-        address _vault,             //  
-        address _strategist,        // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor
-        address _perFeeRecipient,   // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor
+        address _vault,             // ?????????????????? 
         address _want,              // USDC,    MIM,    FRAX,   DAI
-        address _hToken,            //
+        address _hToken,            // ????     ????    ????    ????
         uint256 _LQDRPid,           // 0,       1,      2,      3 
-        address _LQDRFarm           //
+        address _LQDRFarm           // ????     ????    ????    ????
         
     ) {  
         vault = _vault;
-        strategist = _strategist;
-        perFeeRecipient = _perFeeRecipient;
         want = _want;
         hToken = _hToken;
         LQDRPid = _LQDRPid;
@@ -73,10 +64,17 @@ contract hTokensToLQDR is FeeManager, Pausable {
 
         _giveAllowances();
     }
-    
+
     function deposit() external {
         _deposit();
     }
+    function beforeDeposit() external {
+        if (harvestOnDeposit) {
+            require(msg.sender == vault, "only the vault anon!");  
+            _harvest();
+        }
+    }
+// this converts the want to hTokens, then deposits the hTokens into Liquid Driver to earn rewards.
     function _deposit() internal whenNotPaused {
         uint256 wantBal = IERC20(want).balanceOf(address(this));
         if (wantBal > 0) {
@@ -86,7 +84,7 @@ contract hTokensToLQDR is FeeManager, Pausable {
         }
     }
   
-    //takes the funds out of the farm and sends them to the vault.
+//takes the funds out of the farm and sends them to the vault.
     function withdraw(uint256 _amount) external {
         require(msg.sender == vault, "ask the vault to withdraw ser!");  //makes sure only the vault can withdraw from the chef
 
@@ -111,33 +109,26 @@ contract hTokensToLQDR is FeeManager, Pausable {
             wantBal = wantBal.sub(withdrawalFeeAmount);
         }
         //return want to vault
-        IERC20(want).safeTransfer(vault, _amount);
+        IERC20(want).safeTransfer(vault, wantBal);
 
         emit Withdraw(balanceOf());
     }
 
-    function beforeDeposit() external {
-        if (harvestOnDeposit) {
-            require(msg.sender == vault, "!vault");  //makes sure the vault is the only one that can do quick preDeposit Harvest
-            _harvest(tx.origin);
-        }
-    }
-
     function harvest() external virtual {
-        _harvest(tx.origin);
+        _harvest();
     }
 
-    // compounds earnings and charges performance fee
-    function _harvest(address callFeeRecipient) internal whenNotPaused {
+// compounds earnings, charges fees, sends xCheese
+    function _harvest() internal whenNotPaused {
         ILQDR(LQDRFarm).harvest(LQDRPid, address(this));
         uint256 _hndBal = IERC20(HND).balanceOf(address(this));        
         if (_hndBal > 0) {
-            chargeFees(callFeeRecipient);
+            chargeFees(_hndBal);
             sendXCheese();
             uint256 _hndLeft = IERC20(HND).balanceOf(address(this));
             balancerSwap(HNDSwapPoolId, HND, native, _hndLeft);
             uint256 _nativeBal = IERC20(native).balanceOf(address(this));
-            _swapNativeForWant(_nativeBal);
+            _swapNativeForWant(_nativeBal); 
             uint256 wantHarvested = balanceOfWant();
             _deposit();
             lastHarvest = block.timestamp;
@@ -145,26 +136,22 @@ contract hTokensToLQDR is FeeManager, Pausable {
         }
     }
 
-    // performance fees
-    function chargeFees(address callFeeRecipient) internal {
-        uint256 _hndBal = IERC20(HND).balanceOf(address(this));        
+    function chargeFees(uint256 _hndBal) internal {      
         uint256 _totalFees = _hndBal.mul(totalFee).div(1000);
         if (_totalFees > 0) {
             balancerSwap(HNDSwapPoolId, HND, native, _totalFees);
-            uint256 callFeeAmount = _totalFees.mul(callFee).div(MAX_FEE); 
             uint256 strategistFee = _totalFees.mul(STRATEGIST_FEE).div(MAX_FEE);
-            uint256 perFeeAmount = _totalFees.sub(strategistFee).sub(callFeeAmount);
-            IERC20(HND).safeTransfer(callFeeRecipient, callFeeAmount);
-            IERC20(HND).safeTransfer(strategist, strategistFee); 
-            IERC20(HND).safeTransfer(perFeeRecipient, perFeeAmount);  
+            uint256 perFeeAmount = _totalFees.sub(strategistFee);
+            IERC20(native).safeTransfer(strategist, strategistFee); 
+            IERC20(native).safeTransfer(perFeeRecipient, perFeeAmount);  
         }
     }
 
     //ceazor keeps a % of HND set by the xCheeseRate
     function sendXCheese() internal {
-        uint256 forXCheese = IERC20(HND).balanceOf(address(this)).mul(xCheeseKeepRate).div(100);
+        uint256 forXCheese = IERC20(HND).balanceOf(address(this)).mul(xCheeseRate).div(100);
         if (forXCheese > 0) {
-            IERC20(HND).safeTransfer(xCheeseRecipient, forXCheese);   // and send them to xCheese
+            IERC20(HND).safeTransfer(xCheeseRecipient, forXCheese);   //<---------------------------convert to ceazliHND
         }
     }   
 
@@ -177,7 +164,7 @@ contract hTokensToLQDR is FeeManager, Pausable {
         returns (uint256 _amountWant, uint256 _slippageWant)
     {
         uint256[] memory amounts =
-            ISpookySwap(unirouter).swapExactETHForTokens(
+            IUniswapV2Router01(unirouter).swapExactETHForTokens(
                 _nativeBal,
                 getTokenOutPath(address(native), address(want)),
                 address(this),
@@ -265,24 +252,6 @@ contract hTokensToLQDR is FeeManager, Pausable {
         _deposit();
     }
 
-    // Sets the xCheeseRecipient address to recieve the BEETs rewards
-    function setxCheeseRecipient(address _xCheeseRecipient) public onlyOwner {
-        xCheeseRecipient = _xCheeseRecipient;
-    }
-    // Sets the % of HND that are kept and sent to the xCheese Farm
-    function setxCheeseKeepRate(uint256 _xCheeseKeepRate) public onlyOwner {
-        xCheeseKeepRate = _xCheeseKeepRate;
-    }
-
-    // place to reset where strategist fee goes.
-    function setStrategist(address _strategist) public onlyOwner {
-        require(msg.sender == strategist, "!strategist");
-        strategist = _strategist;
-    }
-    // place to reset where performance fee goes.
-    function setperFeeRecipient(address _perFeeRecipient) public onlyOwner {
-        perFeeRecipient = _perFeeRecipient;
-    }
     // to reduce deposit gas cost, this can be turned off.
     function setHarvestOnDeposit(bool _harvestOnDeposit) public onlyOwner {
         harvestOnDeposit = _harvestOnDeposit;

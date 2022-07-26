@@ -13,11 +13,6 @@ import "../../interfaces/IStrategy.sol";
 
 pragma solidity ^0.8.11;
 
-/**
- * @dev Implementation of a vault to deposit funds for yield optimizing.
- * This is the contract that receives funds and that users interface with.
- * The yield optimizing strategy itself is implemented in a separate 'Strategy.sol' contract.
- */
 contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
@@ -27,9 +22,7 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
         uint proposedTime;
     }
 
-    // The last proposed strategy to switch to.
     StratCandidate public stratCandidate;
-    // The strategy currently in use by the vault.
     address public strategy;
     uint256 public depositFee = 0;
     uint256 public constant PERCENT_DIVISOR = 10000;
@@ -38,15 +31,6 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
     IERC20 public want;
     uint256 public approvalDelay = 3600; //delay between strat changes, preset to 1 hour
 
-    /**
-     * + WEBSITE DISCLAIMER +
-     * Im not a dev, don't put your tokens in here!.
-     */
-
-    /**
-     * Mappings used to determine PnL denominated in LP tokens,
-     * as well as keep a generalized history of a user's protocol usage.
-     */
     mapping (address => uint) public cumulativeDeposits;
     mapping (address => uint) public cumulativeWithdrawals;
 
@@ -57,11 +41,11 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
     event DepositsIncremented(address user, uint amount, uint total);
     event WithdrawalsIncremented(address user, uint amount, uint total);
 
-    constructor (
+    constructor(
         address _want,
         string memory _name,
         string memory _symbol
-    ) public ERC20(
+    ) ERC20(
         string(_name),
         string(_symbol)
     ) {
@@ -69,8 +53,7 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
         constructionTime = block.timestamp;       
     }
      
-     
-     //Connects the vault to its initial strategy. One use only.
+    //Connects the vault to its initial strategy. One use only.
     function initialize(address _strategy) public onlyOwner returns (bool) {
         require(!initialized, "Comm'on you alrdy did this!");
         strategy = _strategy;
@@ -78,7 +61,7 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
         return true;
     }
 
-    //It calculates the total underlying value of {token} held by the system.
+    //It calculates the total underlying value of want held by the system.
     //vault  balance + strategy balance + farm balance
     function balance() public view returns (uint) {
         return want.balanceOf(address(this)).add(IStrategy(strategy).balanceOf());    }
@@ -87,7 +70,6 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
     function getPricePerFullShare() public view returns (uint256) {
         return totalSupply() == 0 ? 1e18 : balance().mul(1e18).div(totalSupply());
     }
-
     //deposits users tokens into the vault, then puts them too work in the farms
     function depositAll() external {
         deposit(want.balanceOf(msg.sender));
@@ -118,7 +100,7 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
         IStrategy(strategy).deposit();
     }
 
-    //withdraw funcitions pull funds from vault if able, or from farm.
+    //withdraw function pulls funds from vault if able, or from farm.
     //this action forfeits rewards since last harvest
     function withdrawAll() external {
         withdraw(balanceOf(msg.sender));

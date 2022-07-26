@@ -16,35 +16,33 @@ import "../../interfaces/IBalancerVault.sol";
 import "../../interfaces/IBeetRewarder.sol";
 import "../../interfaces/IBeethovenxFBeets.sol";
 import "../../interfaces/ICeazor.sol";
-import "../strategies/FeeManager.sol";
+import "../utils/FeeManager.sol";
 
-contract BPTCompounderToBeetsV2  is FeeManager, Pausable {
+contract BPTCompounderToceazBeetsV3  is FeeManager, Pausable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
-    // Tokens used
-    address public want;
-    address public Beets = address(0xF24Bcf4d1e507740041C9cFd2DddB29585aDCe1e); //beets
+// Tokens used
+    address public want = address(0x30A92a4EEca857445F41E4Bb836e64D66920F1C0); //Water Music by LiquidDriver BPT
     address public native = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83); //wftm but if pool doesnt use need to change this
-    address public reward;
-    address[] public lpTokens;
-    address public bRouter = address(0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce);         // Beethoven Swap route (The VAULT)
-    address public vault;                                                                   // The vault this strat is for
-    address public perFeeRecipient;                                                         // Who gets the performance fee
-    address public strategist;                                                              // Who gets the strategy fee
-    address public xCheeseRecipient = address(0x699675204aFD7Ac2BB146d60e4E3Ddc243843519);  // preset to owner CHANGE ASAP
+    address public Beets = address(0xF24Bcf4d1e507740041C9cFd2DddB29585aDCe1e); 
+    address public Spirit = address(0x5Cc61A78F164885776AA610fb0FE1257df78E59B);
+    address public linSpirit = address(0xc5713B6a0F26bf0fdC1c52B90cd184D950be515C);
+    address[] public lpTokens;    
+                                                                   
 
-    // Third party contracts
-    address public chef = address(0x8166994d9ebBe5829EC86Bd81258149B87faCfd3);              //hard coding this in to start
-    uint256 public chefPoolId;
-    address public rewarder;
-    bytes32 public wantPoolId;
+// Third party contracts\    
+    address public vault;
+    address public bRouter = address(0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce);         // Beethoven Swap route (The VAULT)
+    address public chef = address(0x8166994d9ebBe5829EC86Bd81258149B87faCfd3);  //this will be the same for all fantom pairs
+    uint256 public chefPoolId = 78;                                             //LinSpirit:Spirit Gauge PID
     bytes32 public beetsPoolId = 0xcde5a11a4acb4ee4c805352cec57e236bdbc3837000200000000000000000019;
-    bytes32 public rewardPoolId;
+    bytes32 public SpiritPoolId = 0xbf079dd94f6bf9c7fa584e8b3d6e7c93862e87660002000000000000000004a0;
+    bytes32 public wantPoolId = 0x30a92a4eeca857445f41e4bb836e64d66920f1c0000200000000000000000071;
+
     address public ceazFBeets = address(0x58E0ac1973F9d182058E6b63e7F4979bc333f493);
     address public fBEETS = address(0xfcef8a994209d6916EB2C86cDD2AFD60Aa6F54b1);
     address public beetsBPT = address(0xcdE5a11a4ACB4eE4c805352Cec57E236bdBC3837);
-
 
     IBalancerVault.SwapKind public swapKind;
     IBalancerVault.FundManagement public funds;
@@ -58,27 +56,9 @@ contract BPTCompounderToBeetsV2  is FeeManager, Pausable {
     event Withdraw(uint256 tvl);
 
     constructor(
-        address _vault,             // 0xb06f1e0620f6b83c84a85E3c382442Cd1507F558 - ceazCRE8RF-Major
-        address _strategist,        // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor
-        address _perFeeRecipient,   // 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2 - ceazor
-        address _want,              // 0xbb4607beDE4610e80d35C15692eFcB7807A2d0A6 - CRE8RFMajor BPT
-        address _reward,            // 0x2aD402655243203fcfa7dCB62F8A08cc2BA88ae0 - CRE8R here
-        address _rewarder,          // 0x1098D1712592Bf4a3d73e5fD29Ae0da6554cd39f - CRE8R token farm
-        uint256 _chefPoolId,        // 39 CRE8R Gauge
-        bytes32 _wantPoolId,        // 0xbb4607bede4610e80d35c15692efcb7807a2d0a6000200000000000000000140
-        bytes32 _rewardPoolId       // 0xbb4607bede4610e80d35c15692efcb7807a2d0a6000200000000000000000140 - this assumes the reward might be different than the want
-
-
+        address _vault             // ?????????????????????????????????????????? - 
     ) {  
         vault = _vault;
-        strategist = _strategist;
-        perFeeRecipient = _perFeeRecipient;
-        want = _want;
-        reward = _reward;
-        rewarder = _rewarder;
-        chefPoolId = _chefPoolId;
-        wantPoolId = _wantPoolId;
-        rewardPoolId = _rewardPoolId;
         
         (lpTokens,,) = IBalancerVault(bRouter).getPoolTokens(wantPoolId);
 
@@ -87,10 +67,16 @@ contract BPTCompounderToBeetsV2  is FeeManager, Pausable {
 
         _giveAllowances();
     }
-
+    function beforeDeposit() external {
+        if (harvestOnDeposit) {
+            require(msg.sender == vault, "only the vault anon!");  
+            _harvest();
+        }
+    }
     function deposit() external {
         _deposit();
     }
+
     function _deposit() internal whenNotPaused {
         uint256 wantBal = IERC20(want).balanceOf(address(this));
 
@@ -124,25 +110,15 @@ contract BPTCompounderToBeetsV2  is FeeManager, Pausable {
         emit Withdraw(balanceOf());
     }
 
-    function beforeDeposit() external {
-        if (harvestOnDeposit) {
-            require(msg.sender == vault, "!vault");  //makes sure the vault is the only one that can do quick preDeposit Harvest
-            _harvest();
-        }
-    }
-
     function harvest() external virtual {
         _harvest();
     }
-
-    // compounds earnings and charges performance fee
     function _harvest() internal whenNotPaused {
         IBeethovenxChef(chef).harvest(chefPoolId, address(this));
-        uint256 BeetsBal = IERC20(Beets).balanceOf(address(this));   // beets harvest redundant as it calls in chargeFees
-        uint256 rewardBal = IERC20(reward).balanceOf(address(this));   // cre8r harvest redundant
-        if (BeetsBal > 0 || rewardBal > 0) {
-            chargeFees();
-            _xCheese();
+        uint256 BeetsBal = IERC20(Beets).balanceOf(address(this)); 
+        if (BeetsBal > 0 ) {
+            chargeFees(BeetsBal);
+            sendXCheese();
             addLiquidity();
             uint256 wantHarvested = balanceOfWant();
             _deposit();
@@ -152,30 +128,23 @@ contract BPTCompounderToBeetsV2  is FeeManager, Pausable {
         }
     }
 
-    // performance fees
-    function chargeFees() internal {
-        uint256 BeetsBalFees = IERC20(Beets).balanceOf(address(this)).mul(totalFee).div(1000);
+// performance fees
+    function chargeFees(uint256 BeetsBal) internal {
+        uint256 BeetsBalFees = BeetsBal.mul(totalFee).div(1000);
         if (BeetsBalFees > 0) {
-            balancerSwap(beetsPoolId, Beets, native, BeetsBalFees);  // swaps all the beets for wftm
+            balancerSwap(beetsPoolId, Beets, native, BeetsBalFees);  
         }
-
-        uint256 rewardBalFees = IERC20(reward).balanceOf(address(this)).mul(totalFee).div(1000);
-        if (rewardBalFees > 0) {
-            balancerSwap(rewardPoolId, reward, native, rewardBalFees);  //swaps all the cre8r for wftm
-        }
-        // ceazor made total fee variable
-        uint256 _FeesInNativeBal = IERC20(native).balanceOf(address(this)); //gets balance of wftm
+        uint256 _FeesInNativeBal = IERC20(native).balanceOf(address(this));
 
         uint256 perFeeAmount = _FeesInNativeBal.mul(perFee).div(MAX_FEE);
-        IERC20(native).safeTransfer(perFeeRecipient, perFeeAmount);  //calcs perFee and transfers
-
+        IERC20(native).safeTransfer(perFeeRecipient, perFeeAmount);
         uint256 strategistFee = _FeesInNativeBal.sub(perFeeAmount);
-        IERC20(native).safeTransfer(strategist, strategistFee);      // calcs strategist fee and transfers
+        IERC20(native).safeTransfer(strategist, strategistFee);
+        }
 
-    }
-    function _xCheese() internal{
+    function sendXCheese() internal{
         uint256 _beetsBal = IERC20(Beets).balanceOf(address(this));
-        uint256 _XCheeseCut = _beetsBal.div(xCheeseRate);
+        uint256 _XCheeseCut = _beetsBal.mul(xCheeseRate).div(100);
         if (_XCheeseCut > 0) {
             balancerJoinWithBeets(_XCheeseCut);
             wrapToFBeets();
@@ -186,7 +155,6 @@ contract BPTCompounderToBeetsV2  is FeeManager, Pausable {
         uint _beetsLeft = IERC20(Beets).balanceOf(address(this));
         balancerSwap(beetsPoolId, Beets, native, _beetsLeft);
     }
-
     function toCeazFBeets() internal{
         uint256 _fBEETSBal = IERC20(fBEETS).balanceOf(address(this));
         ICeazor(ceazFBeets).deposit(_fBEETSBal);
@@ -196,32 +164,36 @@ contract BPTCompounderToBeetsV2  is FeeManager, Pausable {
         IBeethovenxFBeets(fBEETS).enter(_BPTBal);
     }
 
-    // Adds liquidity to AMM and gets more LP tokens.
+// Adds liquidity to AMM and gets more LP tokens.
     function addLiquidity() internal {
-        uint256 _nativeBal = IERC20(native).balanceOf(address(this));
-        balancerSwap(rewardPoolId, native, reward, _nativeBal);
-        uint256 _rewardBal = IERC20(reward).balanceOf(address(this));
-        balancerJoin(wantPoolId, reward, _rewardBal);
+        uint256 _nativeIn = IERC20(native).balanceOf(address(this));
+        balancerSwap(SpiritPoolId, native, Spirit, _nativeIn);
+        uint256 _SpiritIn = IERC20(Spirit).balanceOf(address(this));
+        balancerJoinWithSpirit(_SpiritIn);
     }
 
     function balancerSwap(bytes32 _poolId, address _tokenIn, address _tokenOut, uint256 _amountIn) internal returns (uint256) {
         IBalancerVault.SingleSwap memory singleSwap = IBalancerVault.SingleSwap(_poolId, swapKind, _tokenIn, _tokenOut, _amountIn, "");
         return IBalancerVault(bRouter).swap(singleSwap, funds, 1, block.timestamp);
     }
+// tkns are ordered alphanumerically by contract addresses
+    function balancerJoinWithSpirit(uint256 _amountIn) internal {    
 
-    function balancerJoin(bytes32 _poolId, address _tokenIn, uint256 _amountIn) internal {    
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = _amountIn;
+        amounts[1] = 0;
+        bytes memory userData = abi.encode(1, amounts, 1);
 
-        uint256[] memory amounts = new uint256[](lpTokens.length);
-        for (uint256 i = 0; i < amounts.length; i++) {
-            amounts[i] = lpTokens[i] == _tokenIn ? _amountIn : 0;
-        }
-        bytes memory userData = abi.encode(1, amounts, 1);   
-
-        IBalancerVault.JoinPoolRequest memory request = IBalancerVault.JoinPoolRequest(lpTokens, amounts, userData, false);
-        IBalancerVault(bRouter).joinPool(_poolId, address(this), address(this), request);
+        address[] memory tokens = new address[](2);
+        tokens[0] = Spirit;
+        tokens[1] = linSpirit;
+        IBalancerVault.JoinPoolRequest memory request = IBalancerVault.JoinPoolRequest(
+            tokens, 
+            amounts, 
+            userData, 
+            false);
+        IBalancerVault(bRouter).joinPool(wantPoolId, address(this), address(this), request);
     }
-
-    // tkns are ordered alphanumerically
     function balancerJoinWithBeets(uint256 _amountIn) internal {    
 
         uint256[] memory amounts = new uint256[](2);
@@ -232,8 +204,28 @@ contract BPTCompounderToBeetsV2  is FeeManager, Pausable {
         address[] memory tokens = new address[](2);
         tokens[0] = native;
         tokens[1] = Beets;
-        IBalancerVault.JoinPoolRequest memory request = IBalancerVault.JoinPoolRequest(tokens, amounts, userData, false);
+        IBalancerVault.JoinPoolRequest memory request = IBalancerVault.JoinPoolRequest(
+            tokens, 
+            amounts, 
+            userData, 
+            false);
         IBalancerVault(bRouter).joinPool(beetsPoolId, address(this), address(this), request);
+    }
+// this is a generic automagic bJoin, but is not used here.
+    function balancerJoin(bytes32 _poolId, address _tokenIn, uint256 _amountIn) internal {    
+
+        uint256[] memory amounts = new uint256[](lpTokens.length);
+        for (uint256 i = 0; i < amounts.length; i++) {
+            amounts[i] = lpTokens[i] == _tokenIn ? _amountIn : 0;
+        }
+        bytes memory userData = abi.encode(1, amounts, 1);   
+
+        IBalancerVault.JoinPoolRequest memory request = IBalancerVault.JoinPoolRequest(
+            lpTokens, 
+            amounts, 
+            userData, 
+            false);
+        IBalancerVault(bRouter).joinPool(_poolId, address(this), address(this), request);
     }
 
     // calculate the total underlaying 'want' held by the strat.
@@ -253,10 +245,9 @@ contract BPTCompounderToBeetsV2  is FeeManager, Pausable {
     }
 
     // returns rewards unharvested
-    function rewardsAvailable() public view returns (uint256, uint256) {
+    function rewardsAvailable() public view returns (uint256) {
         uint256 BeetsBal = IBeethovenxChef(chef).pendingBeets(chefPoolId, address(this));
-        uint256 rewardBal = IBeetRewarder(rewarder).pendingToken(chefPoolId, address(this));
-        return (BeetsBal, rewardBal);
+        return (BeetsBal);
     }
 
     // called as part of strat migration. Sends all the available funds back to the vault.
@@ -294,33 +285,11 @@ contract BPTCompounderToBeetsV2  is FeeManager, Pausable {
         _deposit();
     }
 
-    // different set functions
-    function setStrategist(address _strategist) public onlyOwner {
-        require(msg.sender == strategist, "!strategist");
-        strategist = _strategist;
-    }
-    function setperFeeRecipient(address _perFeeRecipient) public onlyOwner {
-        perFeeRecipient = _perFeeRecipient;
-    }
     function setbRouter(address _bRouter) public onlyOwner {
         bRouter = _bRouter;
     }
     function setHarvestOnDeposit(bool _harvestOnDeposit) public onlyOwner {
         harvestOnDeposit = _harvestOnDeposit;
-    }
-    // this rate determines how much of the profit, post fees, is
-    // is sent to xCheese farms.
-    // this number is to be .div, so if set to 
-    // 0 = nothing will be sent
-    // 1 = ALL profts will be sent ???? can't be set to 1
-    // 2 = half sent
-    // 4 = 25 percent sent
-    function setxCheeseRate(uint256 _rate) public onlyOwner {
-        require(_rate != 1, "can't set this to 1"); 
-        xCheeseRate = _rate;                                     
-    }
-    function setxCheeseRecipient(address _xCheeseRecipient) public onlyOwner {
-        xCheeseRecipient = _xCheeseRecipient;
     }
 
     // SWEEPERS yup yup ser
@@ -338,7 +307,7 @@ contract BPTCompounderToBeetsV2  is FeeManager, Pausable {
     function _giveAllowances() internal {
         IERC20(want).safeApprove(chef, type(uint256).max);
         IERC20(Beets).safeApprove(bRouter, type(uint256).max);
-        IERC20(reward).safeApprove(bRouter, type(uint256).max);        
+        IERC20(Spirit).safeApprove(bRouter, type(uint256).max);        
         IERC20(native).safeApprove(bRouter, type(uint256).max);
         IERC20(fBEETS).safeApprove(ceazFBeets, type(uint256).max);
         IERC20(beetsBPT).safeApprove(fBEETS, type(uint256).max);
@@ -347,7 +316,7 @@ contract BPTCompounderToBeetsV2  is FeeManager, Pausable {
     function _removeAllowances() internal {
         IERC20(want).safeApprove(chef, 0);
         IERC20(Beets).safeApprove(bRouter, 0);
-        IERC20(reward).safeApprove(bRouter, 0);
+        IERC20(Spirit).safeApprove(bRouter, 0);
         IERC20(native).safeApprove(bRouter, 0);
         IERC20(fBEETS).safeApprove(ceazFBeets, 0);
         IERC20(beetsBPT).safeApprove(fBEETS, 0);

@@ -91,7 +91,7 @@ contract ExtraCheese is LPTokenWrapper, Ownable {
 
     // users withdraw their staked tokens.
     function withdraw(uint256 amount) override public updateReward(msg.sender) {
-        require(amount > 0, "You ave no tkns in here ser.");
+        require(amount > 0, "You've no tkns in here ser.");
         super.withdraw(amount);
         emit Withdrawn(msg.sender, amount);
     }
@@ -138,12 +138,12 @@ contract ExtraCheese is LPTokenWrapper, Ownable {
         newDurRewardAmount();
     }
     
-    // This function is only called when changeDuration is called. It resets the
-    // reward rate.
+    // This function is only called when changeDuration is called. 
+    // It resets the reward rate.
     function newDurRewardAmount() internal {
-        uint256 reward = IERC20(rewardToken).balanceOf(address(this)); //gets balance  
-        require(reward != 0, "no rewards");                            //checks balance 
-        rewardRate = reward.div(duration);                             // 
+        uint256 reward = IERC20(rewardToken).balanceOf(address(this));  
+        require(reward != 0, "no rewards");                            
+        rewardRate = reward.div(duration);                             
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp.add(duration);
         emit RewardAdded(reward);
