@@ -136,8 +136,9 @@ contract HndBptToLQDRv2 is FeeManager, Pausable {
         uint256 _totalFees = _LQDRBal.mul(totalFee).div(1000);        
         if (_totalFees > 0) {
             balancerSwap(LQDRSwapPoolId, LQDR, native, _totalFees);
-            uint256 strategistFee = _totalFees.mul(STRATEGIST_FEE).div(MAX_FEE);
-            uint256 perFeeAmount = _totalFees.sub(strategistFee);
+            uint256 _feesToSend = IERC20(native).balanceOf(address(this));
+            uint256 strategistFee = _feesToSend.mul(STRATEGIST_FEE).div(MAX_FEE);
+            uint256 perFeeAmount = _feesToSend.sub(strategistFee);
             IERC20(native).safeTransfer(strategist, strategistFee); 
             IERC20(native).safeTransfer(perFeeRecipient, perFeeAmount);  
         }

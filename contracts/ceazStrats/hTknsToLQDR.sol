@@ -53,7 +53,11 @@ contract hTokensToLQDR is FeeManager, Pausable {
         address _want,              // USDC,    MIM,    FRAX,   DAI
         address _hToken,            // ????     ????    ????    ????
         uint256 _LQDRPid,           // 0,       1,      2,      3 
-        address _LQDRFarm           // ????     ????    ????    ????
+        address _LQDRFarm           
+        // USDC = ????
+        // MIM = 0xed566b089fc80df0e8d3e0ad3ad06116433bf4a7
+        // FRAX = ????
+        // DAI = ????
         
     ) {  
         vault = _vault;
@@ -61,6 +65,9 @@ contract hTokensToLQDR is FeeManager, Pausable {
         hToken = _hToken;
         LQDRPid = _LQDRPid;
         LQDRFarm = _LQDRFarm;
+
+        swapKind = IBalancerVault.SwapKind.GIVEN_IN;
+        funds = IBalancerVault.FundManagement(address(this), false, payable(address(this)), false);        
 
         _giveAllowances();
     }
@@ -94,7 +101,7 @@ contract hTokensToLQDR is FeeManager, Pausable {
             //convert want to hTknNeed
             uint256 _hTknNeed = (_amount.sub(wantBal)).div(IHundred(hToken).exchangeRateStored()); 
             //withdraw htkn from lqdr but leaves behind rewards since last harvest
-            ILQDR(LQDRFarm).withdraw(_hTknNeed, LQDRPid, (address(this)));
+            ILQDR(LQDRFarm).withdraw(LQDRPid, _hTknNeed, (address(this)));
             //redeem htkn for want
             IHundred(hToken).redeem(_hTknNeed);
             wantBal = IERC20(want).balanceOf(address(this));
@@ -138,10 +145,11 @@ contract hTokensToLQDR is FeeManager, Pausable {
 
     function chargeFees(uint256 _hndBal) internal {      
         uint256 _totalFees = _hndBal.mul(totalFee).div(1000);
-        if (_totalFees > 0) {
+        if (_totalFees > 0) {             
             balancerSwap(HNDSwapPoolId, HND, native, _totalFees);
-            uint256 strategistFee = _totalFees.mul(STRATEGIST_FEE).div(MAX_FEE);
-            uint256 perFeeAmount = _totalFees.sub(strategistFee);
+            uint256 _feesToSend = IERC20(native).balanceOf(address(this));
+            uint256 strategistFee = _feesToSend.mul(STRATEGIST_FEE).div(MAX_FEE);
+            uint256 perFeeAmount = _feesToSend.sub(strategistFee);
             IERC20(native).safeTransfer(strategist, strategistFee); 
             IERC20(native).safeTransfer(perFeeRecipient, perFeeAmount);  
         }
@@ -271,14 +279,16 @@ contract hTokensToLQDR is FeeManager, Pausable {
 
     //sets global allowances during deployment, and revokes when paused/panic'd.
     function _giveAllowances() internal {
-        IERC20(want).safeApprove(LQDRFarm, type(uint256).max);
+        IERC20(want).safeApprove(hToken, type(uint256).max);
+        IERC20(hToken).safeApprove(LQDRFarm, type(uint256).max);
         IERC20(HND).safeApprove(bRouter, type(uint256).max);
         IERC20(native).safeApprove(bRouter, type(uint256).max);
         IERC20(native).safeApprove(unirouter, type(uint256).max);
 
     }
     function _removeAllowances() internal {
-        IERC20(want).safeApprove(LQDRFarm, 0);
+        IERC20(want).safeApprove(hToken, 0);
+        IERC20(hToken).safeApprove(LQDRFarm, 0);
         IERC20(HND).safeApprove(bRouter, 0);
         IERC20(native).safeApprove(bRouter, 0);
         IERC20(native).safeApprove(unirouter, 0);
