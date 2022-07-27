@@ -169,16 +169,16 @@ contract hTokensToLQDR is FeeManager, Pausable {
     }
 
     function _swapNativeForWant(uint256 _nativeBal) internal
-        returns (uint256 _amountWant, uint256 _slippageWant)
+        returns (uint256 _amountWant)
     {
         uint256[] memory amounts =
-            IUniswapV2Router01(unirouter).swapExactETHForTokens(
+            IUniswapV2Router01(unirouter).swapExactTokensForTokens(
                 _nativeBal,
+                1,
                 getTokenOutPath(address(native), address(want)),
                 address(this),
                 block.timestamp
             );
-        _slippageWant = _amountWant.sub(amounts[amounts.length - 1]);
     }
     function getTokenOutPath(address _token_in, address _token_out)
         internal
