@@ -12,6 +12,7 @@ import "../../interfaces/IUniswapV2Router01.sol";
 import "../../interfaces/IBalancerVault.sol";
 import "../../interfaces/IHundred.sol";
 import "../../interfaces/ILQDR.sol";
+import "../../interfaces/ICeazor.sol";
 import "../utils/FeeManager.sol";
 
 contract hTokensToLQDR is FeeManager, Pausable {
@@ -37,6 +38,11 @@ contract hTokensToLQDR is FeeManager, Pausable {
     address public bRouter = address(0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce);         // HND Swap route (The VAULT on Beets)
     bytes32 public HNDSwapPoolId = bytes32(0x843716e9386af1a26808d8e6ce3948d606ff115a00020000000000000000043a); //HND:wFTM 60/40 BPool
     bytes32 public wantPoolId;
+//xCheese Stuff
+    address public liHND = address(0xA147268f35Db4Ae3932eabe42AF16C36A8B89690);   //liHND
+    address public liHNDBPT = address(0x8F6a658056378558fF88265f7c9444A0FB4DB4be);   
+    address public ceazliHND = address(0xd5Ab59A02E8610FCb9E7c7d863A9A2951dB33148);
+    bytes32 public liHNDPoolId = bytes32(0x8f6a658056378558ff88265f7c9444a0fb4db4be0002000000000000000002b8);
 
     IBalancerVault.SwapKind public swapKind;
     IBalancerVault.FundManagement public funds;
@@ -155,11 +161,14 @@ contract hTokensToLQDR is FeeManager, Pausable {
         }
     }
 
-    //ceazor keeps a % of HND set by the xCheeseRate
+    //converts a % of the HND to ceazliHND tokens
     function sendXCheese() internal {
         uint256 forXCheese = IERC20(HND).balanceOf(address(this)).mul(xCheeseRate).div(100);
         if (forXCheese > 0) {
-            IERC20(HND).safeTransfer(xCheeseRecipient, forXCheese);   //<---------------------------convert to ceazliHND
+            balancerJoinWithHnd(forXCheese);
+            ICeazor(ceazliHND).depositAll(); 
+            uint256 ceazForXCheese = IERC20(ceazliHND).balanceOf(address(this));   
+            IERC20(ceazliHND).safeTransfer(xCheeseRecipient, ceazForXCheese);   
         }
     }   
 
@@ -179,6 +188,19 @@ contract hTokensToLQDR is FeeManager, Pausable {
                 address(this),
                 block.timestamp
             );
+    }
+    function balancerJoinWithHnd(uint256 _amountIn) internal {    
+
+        uint256[] memory amounts = new uint256[](2);
+        amounts[0] = _amountIn;
+        amounts[1] = 0; 
+        bytes memory userData = abi.encode(1, amounts, 1);
+
+        address[] memory tokens = new address[](2);
+        tokens[0] = HND;
+        tokens[1] = liHND;
+        IBalancerVault.JoinPoolRequest memory request = IBalancerVault.JoinPoolRequest(tokens, amounts, userData, false);
+        IBalancerVault(bRouter).joinPool(liHNDPoolId, address(this), address(this), request);
     }
     function getTokenOutPath(address _token_in, address _token_out)
         internal
@@ -224,7 +246,7 @@ contract hTokensToLQDR is FeeManager, Pausable {
     function retireStrat() external {
         require(msg.sender == vault, "anon, you not the vault!"); //makes sure that only the vault can retire a strat
         (uint256 hTkns,) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this)); 
-        ILQDR(LQDRFarm).withdrawAndHarvest(LQDRPid, hTkns, address(this));
+        ILQDR(LQDRFarm).withdraw(LQDRPid, hTkns, address(this));
         IHundred(hToken).redeem(hTkns);
         uint256 wantBal = IERC20(want).balanceOf(address(this));
         IERC20(want).transfer(vault, wantBal);
@@ -234,13 +256,19 @@ contract hTokensToLQDR is FeeManager, Pausable {
     function LQDRpanic() public onlyOwner {
         pause();
         (uint256 hTkns,) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this)); 
-        ILQDR(LQDRFarm).withdrawAndHarvest(LQDRPid, hTkns, address(this));
+        ILQDR(LQDRFarm).withdraw(LQDRPid, hTkns, address(this));
     }
+    function HNDPanic() public onlyOwner {
+        pause();
+        (uint256 hTkns,) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this)); 
+        ILQDR(LQDRFarm).withdraw(LQDRPid, hTkns, address(this));
+        IHundred(hToken).redeem(hTkns);
+        }
     // pauses deposits and withdraws all funds from third party systems and returns funds to vault.
     function bigPanic() public onlyOwner {
         pause();
         (uint256 hTkns,) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this)); 
-        ILQDR(LQDRFarm).withdrawAndHarvest(LQDRPid, hTkns, address(this));
+        ILQDR(LQDRFarm).withdraw(LQDRPid, hTkns, address(this));
         IHundred(hToken).redeem(hTkns);
         uint256 wantBal = IERC20(want).balanceOf(address(this));
         IERC20(want).transfer(vault, wantBal);
@@ -282,6 +310,7 @@ contract hTokensToLQDR is FeeManager, Pausable {
         IERC20(want).safeApprove(hToken, type(uint256).max);
         IERC20(hToken).safeApprove(LQDRFarm, type(uint256).max);
         IERC20(HND).safeApprove(bRouter, type(uint256).max);
+        IERC20(liHNDBPT).safeApprove(ceazliHND, type(uint256).max);
         IERC20(native).safeApprove(bRouter, type(uint256).max);
         IERC20(native).safeApprove(unirouter, type(uint256).max);
 
@@ -290,6 +319,7 @@ contract hTokensToLQDR is FeeManager, Pausable {
         IERC20(want).safeApprove(hToken, 0);
         IERC20(hToken).safeApprove(LQDRFarm, 0);
         IERC20(HND).safeApprove(bRouter, 0);
+        IERC20(liHNDBPT).safeApprove(ceazliHND, 0);
         IERC20(native).safeApprove(bRouter, 0);
         IERC20(native).safeApprove(unirouter, 0);
     }
