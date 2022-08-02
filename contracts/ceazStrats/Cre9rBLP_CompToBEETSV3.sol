@@ -18,30 +18,30 @@ import "../../interfaces/IBeethovenxFBeets.sol";
 import "../../interfaces/ICeazor.sol";
 import "../utils/FeeManager.sol";
 
-contract BPTCompounderToBeetsV3  is FeeManager, Pausable {
+contract Cre8rBPTCompounderToceazBeetsV3  is FeeManager, Pausable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
 // Tokens used
     address public native = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83); //wftm but if pool doesnt use need to change this
-    address public Beets = address(0xF24Bcf4d1e507740041C9cFd2DddB29585aDCe1e); //beets
-    address public want;
-    address public reward;
+    address public Beets = address(0xF24Bcf4d1e507740041C9cFd2DddB29585aDCe1e); 
+    address public want = address(0xbb4607beDE4610e80d35C15692eFcB7807A2d0A6); //CRE8R BPT
+    address public reward = address(0x2aD402655243203fcfa7dCB62F8A08cc2BA88ae0); // CRE8R here
     address[] public lpTokens;
     
-    address public vault;                                                                   // The vault this strat is for
+    address public vault;                                                                 
 
 // Third party contracts
-    address public bRouter = address(0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce);         // Beethoven Swap route (The VAULT)
-    address public chef = address(0x8166994d9ebBe5829EC86Bd81258149B87faCfd3);  //this will be the same for all fantom pairs
-    uint256 public chefPoolId = 39;  //CRE8R Gauge PID
-    address public rewarder = address(0x1098D1712592Bf4a3d73e5fD29Ae0da6554cd39f); // this contract hold the CRE8R rewards
+    address public bRouter = address(0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce);   // Beethoven Swap route (The VAULT)
+    address public chef = address(0x8166994d9ebBe5829EC86Bd81258149B87faCfd3);      //this will be the same for all fantom pairs
+    uint256 public chefPoolId = 39;                                                 //CRE8R Gauge PID
+    address public rewarder = address(0x1098D1712592Bf4a3d73e5fD29Ae0da6554cd39f);  // this contract hold the CRE8R rewards
     bytes32 public beetsPoolId = 0xcde5a11a4acb4ee4c805352cec57e236bdbc3837000200000000000000000019;
     address public ceazFBeets = address(0x58E0ac1973F9d182058E6b63e7F4979bc333f493);
     address public fBEETS = address(0xfcef8a994209d6916EB2C86cDD2AFD60Aa6F54b1);
     address public beetsBPT = address(0xcdE5a11a4ACB4eE4c805352Cec57E236bdBC3837);
-    bytes32 public rewardPoolId;
-    bytes32 public wantPoolId;
+    bytes32 public rewardPoolId = bytes32(0xbb4607bede4610e80d35c15692efcb7807a2d0a6000200000000000000000140);
+    bytes32 public wantPoolId = bytes32(0xbb4607bede4610e80d35c15692efcb7807a2d0a6000200000000000000000140);
 
     IBalancerVault.SwapKind public swapKind;
     IBalancerVault.FundManagement public funds;
@@ -55,19 +55,9 @@ contract BPTCompounderToBeetsV3  is FeeManager, Pausable {
     event Withdraw(uint256 tvl);
 
     constructor(
-        address _vault,             // 0xb06f1e0620f6b83c84a85E3c382442Cd1507F558 - ceazCRE8RF-Major
-        address _want,              // 0xbb4607beDE4610e80d35C15692eFcB7807A2d0A6 - CRE8RFMajor BPT
-        address _reward,            // 0x2aD402655243203fcfa7dCB62F8A08cc2BA88ae0 - CRE8R here
-        address _rewarder,          // 0x1098D1712592Bf4a3d73e5fD29Ae0da6554cd39f - CRE8R token farm
-        bytes32 _wantPoolId,        // 0xbb4607bede4610e80d35c15692efcb7807a2d0a6000200000000000000000140
-        bytes32 _rewardPoolId       // 0xbb4607bede4610e80d35c15692efcb7807a2d0a6000200000000000000000140 - this assumes the reward might be different than the want
+        address _vault             // 0xb06f1e0620f6b83c84a85E3c382442Cd1507F558 - ceazCRE8RF-Major
     ) {  
         vault = _vault;
-        want = _want;
-        reward = _reward;
-        rewarder = _rewarder;
-        wantPoolId = _wantPoolId;
-        rewardPoolId = _rewardPoolId;
         
         (lpTokens,,) = IBalancerVault(bRouter).getPoolTokens(wantPoolId);
 
@@ -124,8 +114,8 @@ contract BPTCompounderToBeetsV3  is FeeManager, Pausable {
     }
     function _harvest() internal whenNotPaused {
         IBeethovenxChef(chef).harvest(chefPoolId, address(this));
-        uint256 BeetsBal = IERC20(Beets).balanceOf(address(this));   // beets harvest redundant as it calls in chargeFees
-        uint256 rewardBal = IERC20(reward).balanceOf(address(this));   // cre8r harvest redundant
+        uint256 BeetsBal = IERC20(Beets).balanceOf(address(this));   
+        uint256 rewardBal = IERC20(reward).balanceOf(address(this));   
         if (BeetsBal > 0 || rewardBal > 0) {
             chargeFees(BeetsBal, rewardBal);
             sendXCheese();

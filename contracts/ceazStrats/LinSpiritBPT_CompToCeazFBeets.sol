@@ -18,7 +18,7 @@ import "../../interfaces/IBeethovenxFBeets.sol";
 import "../../interfaces/ICeazor.sol";
 import "../utils/FeeManager.sol";
 
-contract BPTCompounderToceazBeetsV3  is FeeManager, Pausable {
+contract LinSpiritBPTCompounderToceazBeetsV3  is FeeManager, Pausable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
