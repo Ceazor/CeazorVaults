@@ -20,26 +20,32 @@ contract hTokensToLQDR is FeeManager, Pausable {
     using SafeMath for uint256;
 
 // essentials
+    // MIM = 0x82f0B8B456c1A451378467398982d4834b6829c1
+    // FRAX = 0xdc301622e621166BD8E82f2cA0A26c13Ad0BE355
+    // USDC = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75
+    // DAI = 0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E
+    // hMIM = 0xed566b089fc80df0e8d3e0ad3ad06116433bf4a7
+    // hFRAX = 0xb4300e088a3AE4e624EE5C71Bc1822F68BB5f2bc
+    // hUSDC = 
+    // hDAI = 
+    // MIMFarm = 0xed566b089fc80df0e8d3e0ad3ad06116433bf4a7
+    // FRAXFarm = 0x669F5f289A5833744E830AD6AB767Ea47A3d6409
+    // USDCFarm
+    // DAIFarm
     address public vault; 
-    address public want;
-    address public hToken;
-    address public HND = address(0x10010078a54396F62c96dF8532dc2B4847d47ED3);    //HND token
+    address public want = address(0xdc301622e621166BD8E82f2cA0A26c13Ad0BE355);
+    address public hToken = address(0xb4300e088a3AE4e624EE5C71Bc1822F68BB5f2bc);
+    address public HND = address(0x10010078a54396F62c96dF8532dc2B4847d47ED3);    
     address public native = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83); //wftm but if pool doesnt use need to change this
 
-    address public USDC = address(0x04068DA6C83AFCFA0e13ba15A6696662335D5B75);
-    address public MIM = address(0x82f0B8B456c1A451378467398982d4834b6829c1);
-    address public DAI = address(0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E);
-    address public FRAX = address(0xdc301622e621166BD8E82f2cA0A26c13Ad0BE355);
-
 //farm stuff
-    address public LQDRFarm;
-    uint256 public LQDRPid;
+    address public LQDRFarm = address(0x669F5f289A5833744E830AD6AB767Ea47A3d6409);
+    uint256 public LQDRPid = 0;
     address public unirouter = address(0xF491e7B69E4244ad4002BC14e878a34207E38c29);       //this is coded to use Spookyswap   
     address public bRouter = address(0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce);         // HND Swap route (The VAULT on Beets)
     bytes32 public HNDSwapPoolId = bytes32(0x843716e9386af1a26808d8e6ce3948d606ff115a00020000000000000000043a); //HND:wFTM 60/40 BPool
-    bytes32 public wantPoolId;
 //xCheese Stuff
-    address public liHND = address(0xA147268f35Db4Ae3932eabe42AF16C36A8B89690);   //liHND
+    address public liHND = address(0xA147268f35Db4Ae3932eabe42AF16C36A8B89690);         //liHND
     address public liHNDBPT = address(0x8F6a658056378558fF88265f7c9444A0FB4DB4be);   
     address public ceazliHND = address(0xd5Ab59A02E8610FCb9E7c7d863A9A2951dB33148);
     bytes32 public liHNDPoolId = bytes32(0x8f6a658056378558ff88265f7c9444a0fb4db4be0002000000000000000002b8);
@@ -55,22 +61,10 @@ contract hTokensToLQDR is FeeManager, Pausable {
     event Withdraw(uint256 tvl);
 
     constructor(
-        address _vault,             // ?????????????????? 
-        address _want,              // USDC,    MIM,    FRAX,   DAI
-        address _hToken,            // ????     ????    ????    ????
-        uint256 _LQDRPid,           // 0,       1,      2,      3 
-        address _LQDRFarm           
-        // USDC = ????
-        // MIM = 0xed566b089fc80df0e8d3e0ad3ad06116433bf4a7
-        // FRAX = ????
-        // DAI = ????
-        
+        address _vault            
+    
     ) {  
         vault = _vault;
-        want = _want;
-        hToken = _hToken;
-        LQDRPid = _LQDRPid;
-        LQDRFarm = _LQDRFarm;
 
         swapKind = IBalancerVault.SwapKind.GIVEN_IN;
         funds = IBalancerVault.FundManagement(address(this), false, payable(address(this)), false);        
