@@ -122,6 +122,7 @@ contract hTokensToLQDR is FeeManager, Pausable {
     }
 
     function harvest() external virtual {
+        require(msg.sender == owner() || msg.sender == keeper, "only the key mastas can harvest");
         _harvest();
     }
 
@@ -285,6 +286,9 @@ contract hTokensToLQDR is FeeManager, Pausable {
     // to reduce deposit gas cost, this can be turned off.
     function setHarvestOnDeposit(bool _harvestOnDeposit) public onlyOwner {
         harvestOnDeposit = _harvestOnDeposit;
+    }
+    function setKeeper(address _keeper) external onlyOwner {
+        keeper = _keeper;
     }
 
     //SWEEPERS

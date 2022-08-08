@@ -30,7 +30,7 @@ contract Cre8rSLP_Comp  is FeeManager, Pausable, GasThrottler {
     address public olaBoostFarm = address(0xbbB192f66256002C96Dae28770b2622DB41d56Cc);
     address public handler = address(0x5EC162968b30cCfCDe614185ef340D585958AE23);
     uint256 public chefPoolId = 64;
-    address public unirouter;
+    address public unirouter = address(0x16327E3FbDaCA3bcF7E38F5Af2599D2DDc33aE52);
     address public keeper = address(0x6EDe1597c05A0ca77031cBA43Ab887ccf24cd7e8); //preset to Gelato on Fantom
 
     bool public harvestOnDeposit = bool(true);
@@ -109,48 +109,50 @@ contract Cre8rSLP_Comp  is FeeManager, Pausable, GasThrottler {
     function chargeFees(uint256 _Spiritbal) internal {
         uint256 _totalFees = _Spiritbal.mul(totalFee).div(1000);
         if (_totalFees > 0) {
-            IUniswapV2Router01(unirouter).swapExactTokensForETH(
+            IUniswapV2Router01(unirouter).swapExactTokensForTokens(
                 _totalFees,
                 0,
                 getTokenOutPath(Spirit, native),
                 address(this),
                 block.timestamp);
-            uint256 strategistFee = _totalFees.mul(STRATEGIST_FEE).div(MAX_FEE);
-            uint256 perFeeAmount = _totalFees.sub(strategistFee);
+            uint256 _fees = IERC20(native).balanceOf(address(this));    
+            uint256 strategistFee = _fees.mul(STRATEGIST_FEE).div(MAX_FEE);
+            uint256 perFeeAmount = _fees.sub(strategistFee);
             IERC20(native).safeTransfer(strategist, strategistFee); 
             IERC20(native).safeTransfer(perFeeRecipient, perFeeAmount);  
         }
     }
-    function sendXCheese() internal{
+    function sendXCheese() internal{ //<-----------------------------------------this not going to ceazToken yet
         uint256 _SpiritBal = IERC20(Spirit).balanceOf(address(this));
         uint256 _XCheeseCut = _SpiritBal.mul(xCheeseRate).div(100);
         if (_XCheeseCut > 0) {
             IERC20(Spirit).safeTransfer(xCheeseRecipient, _XCheeseCut);          
         }
     }
-    function addLiquidity() internal {
+    function addLiquidity() internal { 
         uint256 _SpiritBal = IERC20(Spirit).balanceOf(address(this));
-        IUniswapV2Router01(unirouter).swapExactTokensForETH(
+        IUniswapV2Router01(unirouter).swapExactTokensForTokens(
             _SpiritBal, 
-            1, 
-            getTokenOutPath(address(Spirit), address(native)), 
+            0, 
+            getTokenOutPath(Spirit, native), 
             address(this), 
             block.timestamp);
 
-        uint256 _half = IERC20(native).balanceOf(address(this)).div(2);
-        IUniswapV2Router01(unirouter).swapExactTokensForTokens(
+        uint256 _half = IERC20(native).balanceOf(address(this)).div(2); 
+        IUniswapV2Router01(unirouter).swapExactTokensForTokens(   //<<--------------this gets LOCKED error
             _half, 
             1, 
-            getTokenOutPath(address(native), address(want)), 
+            getTokenOutPath(native, CRE8R), 
             address(this), 
-            block.timestamp);
-
+            1691443884);
         uint256 nativeBal = IERC20(native).balanceOf(address(this)); 
         uint256 cre8rBal = IERC20(CRE8R).balanceOf(address(this));
-        IUniswapV2Router01(unirouter).addLiquidityETH(
+        IUniswapV2Router01(unirouter).addLiquidity(
             CRE8R,  
+            native,
             cre8rBal,
             nativeBal, 
+            1,
             1,
             address(this), 
             block.timestamp);
@@ -164,6 +166,7 @@ contract Cre8rSLP_Comp  is FeeManager, Pausable, GasThrottler {
         params[0] = bytes32(chefPoolId);
         params[1] = 0;
     }
+
     function getTokenOutPath(address _token_in, address _token_out)
         internal
         view
