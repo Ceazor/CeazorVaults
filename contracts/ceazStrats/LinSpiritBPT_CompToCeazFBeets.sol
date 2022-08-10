@@ -111,6 +111,7 @@ contract LinSpiritBPTCompounderToceazBeetsV3  is FeeManager, Pausable {
     }
 
     function harvest() external virtual {
+        require(msg.sender == owner() || msg.sender == keeper, "only the key mastas can harvest");
         _harvest();
     }
     function _harvest() internal whenNotPaused {

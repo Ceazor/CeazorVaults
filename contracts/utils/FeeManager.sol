@@ -20,6 +20,7 @@ abstract contract FeeManager is Ownable {
     address public perFeeRecipient = address(0x699675204aFD7Ac2BB146d60e4E3Ddc243843519);    //preset to owner  
     address public strategist = address(0x3c5Aac016EF2F178e8699D6208796A2D67557fe2);         // preset to ceazor                                                     // Who gets the strategy fee
     address public xCheeseRecipient = address(0x699675204aFD7Ac2BB146d60e4E3Ddc243843519);  // preset to owner CHANGE ASAP
+    address public keeper = address(0x6EDe1597c05A0ca77031cBA43Ab887ccf24cd7e8); //preset to Gelato on Fantom
 
 
     function setTotalFee(uint256 _totalFee) public onlyOwner {
@@ -51,5 +52,9 @@ abstract contract FeeManager is Ownable {
     }
     function setxCheeseRecipient(address _address) public onlyOwner {
         xCheeseRecipient = _address;
+    }
+    // keeper is to grant harvest() rights    
+    function setKeeper(address _keeper) external onlyOwner {
+        keeper = _keeper;
     }
 }

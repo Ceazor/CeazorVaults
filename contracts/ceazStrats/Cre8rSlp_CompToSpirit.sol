@@ -31,7 +31,6 @@ contract Cre8rSLP_Comp  is FeeManager, Pausable, GasThrottler {
     address public handler = address(0x5EC162968b30cCfCDe614185ef340D585958AE23);
     uint256 public chefPoolId = 64;
     address public unirouter = address(0x16327E3FbDaCA3bcF7E38F5Af2599D2DDc33aE52);
-    address public keeper = address(0x6EDe1597c05A0ca77031cBA43Ab887ccf24cd7e8); //preset to Gelato on Fantom
 
     bool public harvestOnDeposit = bool(true);
     uint256 public lastHarvest;    
@@ -211,10 +210,6 @@ contract Cre8rSLP_Comp  is FeeManager, Pausable, GasThrottler {
         IOla(olaBoostFarm).withdrawAll(); 
         uint256 wantBal = IERC20(want).balanceOf(address(this));
         IERC20(want).transfer(vault, wantBal);
-    }
-
-    function setKeeper(address _keeper) external onlyOwner {
-        keeper = _keeper;
     }
 
     // pauses deposits and withdraws all funds from third party systems.
