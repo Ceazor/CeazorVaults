@@ -97,6 +97,7 @@ contract Cre8rSLP_Comp  is FeeManager, Pausable, GasThrottler {
         if (_SpiritBal > 0) {
             chargeFees(_SpiritBal);
             sendXCheese();
+            dumpRewards();
             addLiquidity();
             uint256 wantHarvested = balanceOfWant();
             _deposit();
@@ -105,6 +106,7 @@ contract Cre8rSLP_Comp  is FeeManager, Pausable, GasThrottler {
             emit StratHarvest(msg.sender, wantHarvested, balanceOf());
         }
     }
+      
     function chargeFees(uint256 _Spiritbal) internal {
         uint256 _totalFees = _Spiritbal.mul(totalFee).div(1000);
         if (_totalFees > 0) {
@@ -128,7 +130,7 @@ contract Cre8rSLP_Comp  is FeeManager, Pausable, GasThrottler {
             IERC20(Spirit).safeTransfer(xCheeseRecipient, _XCheeseCut);          
         }
     }
-    function addLiquidity() internal { 
+    function dumpRewards() internal {;
         uint256 _SpiritBal = IERC20(Spirit).balanceOf(address(this));
         IUniswapV2Router01(unirouter).swapExactTokensForTokens(
             _SpiritBal, 
@@ -136,7 +138,8 @@ contract Cre8rSLP_Comp  is FeeManager, Pausable, GasThrottler {
             getTokenOutPath(Spirit, native), 
             address(this), 
             block.timestamp);
-
+    }
+    function addLiquidity() internal { 
         uint256 _half = IERC20(native).balanceOf(address(this)).div(2); 
         IUniswapV2Router01(unirouter).swapExactTokensForTokens(   //<<--------------this gets LOCKED error
             _half, 
