@@ -12,11 +12,12 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "../../interfaces/IBaseWeightedPool.sol";
 import "../../interfaces/IBalancerGauge.sol";
+import "../../interfaces/IBalancerGaugeHelper.sol";
 import "../../interfaces/IBalancerVault.sol";
 import "../../interfaces/ICeazor.sol";
 import "../utils/FeeManager.sol";
 
-contract ibBPTCompounderToBAL  is FeeManager, Pausable {
+contract IBBPTCompounderToBAL  is FeeManager, Pausable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -33,6 +34,7 @@ contract ibBPTCompounderToBAL  is FeeManager, Pausable {
 // Third party contracts
     address public bRouter = address(0xBA12222222228d8Ba445958a75a0704d566BF2C8);   // Beethoven Swap route (The VAULT) same on OP?
     address public chef = address(0x3672884a609bFBb008ad9252A544F52dF6451A03);      //this is called a gauge on OP
+    address public helper = address(0x299dcDF14350999496204c141A0c20A29d71AF3E);     //just used for claim, pending()
     bytes32 public BALPoolId = bytes32(0xd6e5824b54f64ce6f1161210bc17eebffc77e031000100000000000000000006);        // only need this to sell beets. not at this point, viable
     bytes32 public OPPoolId = bytes32(0x39965c9dab5448482cf7e002f583c812ceb53046000100000000000000000003);
     bytes32 public rewardPoolId = bytes32(0xefb0d9f51efd52d7589a9083a6d0ca4de416c24900020000000000000000002c);
@@ -105,10 +107,11 @@ contract ibBPTCompounderToBAL  is FeeManager, Pausable {
     }
 
     function harvest() external virtual {
+        require(msg.sender == owner() || msg.sender == keeper, "only the key mastas can harvest"); 
         _harvest();
     }
     function _harvest() internal whenNotPaused {
-        IBalancerGauge(chef).claim_rewards(address(this));
+        IBalancerGaugeHelper(helper).claimRewards(chef, address(this));
         uint256 BALBal = IERC20(BAL).balanceOf(address(this));   
         uint256 rewardBal = IERC20(reward).balanceOf(address(this));   
         if (BALBal > 0 || rewardBal > 0) {
@@ -150,10 +153,12 @@ contract ibBPTCompounderToBAL  is FeeManager, Pausable {
         if (_XCheeseCut > 0) {
             IERC20(BAL).safeTransfer(xCheeseRecipient, _XCheeseCut);          
         }
-        uint _BALLeft = IERC20(BAL).balanceOf(address(this));
-        balancerSwap(BALPoolId, BAL, OP, _BALLeft);
-        uint256 OPBal = IERC20(OP).balanceOf(address(this));
-        balancerSwap(OPPoolId, OP, native, OPBal);
+        uint256 _BALLeft = IERC20(BAL).balanceOf(address(this));
+        if (_BALLeft > 0){
+            balancerSwap(BALPoolId, BAL, OP, _BALLeft);
+            uint256 OPBal = IERC20(OP).balanceOf(address(this));
+            balancerSwap(OPPoolId, OP, native, OPBal);
+        }
     }
 
 
@@ -163,11 +168,11 @@ contract ibBPTCompounderToBAL  is FeeManager, Pausable {
         uint256 _rewardIn = IERC20(reward).balanceOf(address(this));
         balancerJoinWithBoth(_rewardIn, _nativeIn);
     }
-
     function balancerSwap(bytes32 _poolId, address _tokenIn, address _tokenOut, uint256 _amountIn) internal returns (uint256) {
         IBalancerVault.SingleSwap memory singleSwap = IBalancerVault.SingleSwap(_poolId, swapKind, _tokenIn, _tokenOut, _amountIn, "");
         return IBalancerVault(bRouter).swap(singleSwap, funds, 1, block.timestamp);
     }
+    
 // tkns are ordered alphanumerically by contract addresses
     function balancerJoinWithBoth(uint256 _rewardIn, uint256 _nativeIn) internal {    
 
@@ -206,6 +211,7 @@ contract ibBPTCompounderToBAL  is FeeManager, Pausable {
     // called as part of strat migration. Sends all the available funds back to the vault.
     function retireStrat() external {
         require(msg.sender == vault, "anon, you not the vault!"); //makes sure that only the vault can retire a strat
+        _harvest();
         uint256 allWant = IBalancerGauge(chef).balanceOf(address(this));
         IBalancerGauge(chef).withdraw(allWant);
         uint256 wantBal = IERC20(want).balanceOf(address(this));

@@ -75,7 +75,7 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
         deposit(want.balanceOf(msg.sender));
     }
     function deposit(uint _amount) public nonReentrant {
-        require(_amount > 0, "please provide amount");
+        require(_amount > 0, "Why are you depositing 0 want?");
         uint256 _pool = balance();
         uint256 _before = want.balanceOf(address(this));
         want.safeTransferFrom(msg.sender, address(this), _amount);
