@@ -21,7 +21,7 @@ contract hTokensToLQDR is FeeManager, Pausable {
 
 // essentials
     // MIM = 0x82f0B8B456c1A451378467398982d4834b6829c1
-    // hMIM = 0xed566b089fc80df0e8d3e0ad3ad06116433bf4a7
+    // hMIM = 0xa8cD5D59827514BCF343EC19F531ce1788Ea48f8
     // MIMFarm = 0xed566b089fc80df0e8d3e0ad3ad06116433bf4a7
     // FRAX = 0xdc301622e621166BD8E82f2cA0A26c13Ad0BE355
     // hFRAX = 0xb4300e088a3AE4e624EE5C71Bc1822F68BB5f2bc
@@ -227,7 +227,7 @@ contract hTokensToLQDR is FeeManager, Pausable {
     // it calculates how much 'want' the strategy has working in the farm.
     function balanceOfPool() public view returns (uint256) {
         (uint256 _htkns,) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this));
-        uint256 _amount = _htkns.mul(IHundred(hToken).exchangeRateStored());
+        uint256 _amount = _htkns.mul(IHundred(hToken).exchangeRateStored()).div(1000000000000000000);
         return _amount;
     }
 
