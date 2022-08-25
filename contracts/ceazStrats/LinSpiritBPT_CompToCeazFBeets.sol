@@ -294,12 +294,6 @@ contract LinSpiritBPTCompounderToceazBeetsV3  is FeeManager, Pausable {
     }
 
     // SWEEPERS yup yup ser
-    function inCaseTokensGetStuck(address _token) external onlyOwner {
-        uint256 amount = IERC20(_token).balanceOf(address(this));
-        inCaseTokensGetStuck(_token, msg.sender, amount);
-    }
-
-    // dev. can you do something?
     function inCaseTokensGetStuck(address _token, address _to, uint _amount) public onlyOwner {
         require(_token != address(want), "you gotta rescue your own deposits");
         IERC20(_token).safeTransfer(_to, _amount);

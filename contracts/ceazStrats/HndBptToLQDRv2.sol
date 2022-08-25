@@ -235,11 +235,6 @@ contract HndBptToLQDRv2 is FeeManager, Pausable {
         harvestOnDeposit = _harvestOnDeposit;
     }
 
-//SWEEPERS
-    function inCaseTokensGetStuck(address _token) external onlyOwner {
-        uint256 amount = IERC20(_token).balanceOf(address(this));
-        inCaseTokensGetStuck(_token, msg.sender, amount);
-    }
 
 // dev. can you do something?
     function inCaseTokensGetStuck(address _token, address _to, uint _amount) public onlyOwner {

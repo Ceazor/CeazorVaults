@@ -26,20 +26,20 @@ contract hTokensToLQDR is FeeManager, Pausable {
     // FRAX = 0xdc301622e621166BD8E82f2cA0A26c13Ad0BE355
     // hFRAX = 0xb4300e088a3AE4e624EE5C71Bc1822F68BB5f2bc
     // FRAXFarm = 0x669F5f289A5833744E830AD6AB767Ea47A3d6409
-    // USDC = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75
+    // USDC = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75 (check the Decimals in balanceOf())
     // hUSDC = 0x243E33aa7f6787154a8E59d3C27a66db3F8818ee
     // USDCFarm = 0x9A07fB107b9d8eA8B82ECF453Efb7cFb85A66Ce9
     // DAI = 0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E
     // hDAI =
     // DAIFarm
     address public vault; 
-    address public want = address(0x04068DA6C83AFCFA0e13ba15A6696662335D5B75);
-    address public hToken = address(0x243E33aa7f6787154a8E59d3C27a66db3F8818ee);
+    address public want = address(0x82f0B8B456c1A451378467398982d4834b6829c1);
+    address public hToken = address(0xa8cD5D59827514BCF343EC19F531ce1788Ea48f8);
     address public HND = address(0x10010078a54396F62c96dF8532dc2B4847d47ED3);    
     address public native = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83); //wftm but if pool doesnt use need to change this
 
 //farm stuff
-    address public LQDRFarm = address(0x9A07fB107b9d8eA8B82ECF453Efb7cFb85A66Ce9);
+    address public LQDRFarm = address(0xeD566B089Fc80Df0e8D3E0AD3aD06116433Bf4a7);
     uint256 public LQDRPid = 0;
     address public unirouter = address(0xF491e7B69E4244ad4002BC14e878a34207E38c29);       //this is coded to use Spookyswap   
     address public bRouter = address(0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce);         // HND Swap route (The VAULT on Beets)
@@ -285,10 +285,6 @@ contract hTokensToLQDR is FeeManager, Pausable {
     }
 
     //SWEEPERS
-    function inCaseTokensGetStuck(address _token) external onlyOwner {
-        uint256 amount = IERC20(_token).balanceOf(address(this));
-        inCaseTokensGetStuck(_token, msg.sender, amount);
-    }
     function inCaseTokensGetStuck(address _token, address _to, uint _amount) public onlyOwner {
         require(_token != address(want), "you gotta rescue your own deposits");
         IERC20(_token).safeTransfer(_to, _amount);
