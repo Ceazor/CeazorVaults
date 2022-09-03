@@ -99,7 +99,7 @@ contract hTokensToLQDR is FeeManager, Pausable {
 
         if (wantBal < _amount) {
             //convert want to hTknNeed
-            uint256 _hTknNeed = (_amount.sub(wantBal)).div(IHundred(hToken).exchangeRateStored().mul(1000000000000000000)); 
+            uint256 _hTknNeed = (_amount.sub(wantBal)).div(IHundred(hToken).exchangeRateStored()).mul(1000000000000000000); 
             //withdraw htkn from lqdr but leaves behind rewards since last harvest
             ILQDR(LQDRFarm).withdraw(LQDRPid, _hTknNeed, (address(this)));
             //redeem htkn for want
