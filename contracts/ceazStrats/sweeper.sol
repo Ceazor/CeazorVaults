@@ -33,6 +33,13 @@ contract sweeper  is Ownable {
         uint256 amount = IERC20(_token).balanceOf(address(this));
         IERC20(_token).safeTransfer(_receiver, amount);
     }
+// these functions' purpose is to allow reuse of the contract instead of redeploying it
+    function setWant(address _want) external onlyOwner {
+        want = _want;        
+    }
+    function setVault(address _vault) external onlyOwner{
+        vault = _vault;
+    }
 
 
 }
