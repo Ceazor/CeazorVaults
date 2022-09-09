@@ -96,11 +96,6 @@ contract IBBPTCompounderToBAL  is FeeManager, Pausable {
             wantBal = _amount;
         }
 
-        if (tx.origin != owner() && !paused()) {
-            uint256 withdrawalFeeAmount = wantBal.mul(withdrawalFee).div(WITHDRAWAL_MAX);
-            wantBal = wantBal.sub(withdrawalFeeAmount);
-        }
-
         IERC20(want).safeTransfer(vault, wantBal);
 
         emit Withdraw(balanceOf());
@@ -128,23 +123,25 @@ contract IBBPTCompounderToBAL  is FeeManager, Pausable {
 
 // performance fees
     function chargeFees(uint256 BALBal, uint256 rewardBal) internal {
-        uint256 BALBalFees = BALBal.mul(totalFee).div(1000);
+        uint256 BALBalFees = BALBal.mul(totalFee).div(MULTIPLIER);
         if (BALBalFees > 0) {
             balancerSwap(BALPoolId, BAL, OP, BALBalFees);
             uint256 OPBal = IERC20(OP).balanceOf(address(this));
             balancerSwap(OPPoolId, OP, native, OPBal); 
         }
-        uint256 rewardBalFees = rewardBal.mul(totalFee).div(1000);
+        uint256 rewardBalFees = rewardBal.mul(totalFee).div(MULTIPLIER);
         if (rewardBalFees > 0) {
             balancerSwap(rewardPoolId, reward, native, rewardBalFees);  
         }
         uint256 _FeesInNativeBal = IERC20(native).balanceOf(address(this));
 
-        uint256 perFeeAmount = _FeesInNativeBal.mul(perFee).div(MAX_FEE);
+        uint256 strategistFee = _FeesInNativeBal.mul(stratFee).div(MULTIPLIER);
+        IERC20(native).safeTransfer(strategist, strategistFee);
+
+        uint256 perFeeAmount = _FeesInNativeBal.sub(strategistFee);
         IERC20(native).safeTransfer(perFeeRecipient, perFeeAmount);  
 
-        uint256 strategistFee = _FeesInNativeBal.sub(perFeeAmount);
-        IERC20(native).safeTransfer(strategist, strategistFee);
+
         }
 
     function sendXCheese() internal{

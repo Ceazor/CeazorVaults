@@ -111,10 +111,6 @@ contract hTokensToLQDR is FeeManager, Pausable {
             wantBal = _amount;
         }
 
-        if (tx.origin != owner() && !paused()) {
-            uint256 withdrawalFeeAmount = wantBal.mul(withdrawalFee).div(WITHDRAWAL_MAX);
-            wantBal = wantBal.sub(withdrawalFeeAmount);
-        }
         //return want to vault
         IERC20(want).safeTransfer(vault, wantBal);
 
@@ -145,11 +141,11 @@ contract hTokensToLQDR is FeeManager, Pausable {
     }
 
     function chargeFees(uint256 _hndBal) internal {      
-        uint256 _totalFees = _hndBal.mul(totalFee).div(1000);
+        uint256 _totalFees = _hndBal.mul(totalFee).div(MULTIPLIER);
         if (_totalFees > 0) {             
             balancerSwap(HNDSwapPoolId, HND, native, _totalFees);
             uint256 _feesToSend = IERC20(native).balanceOf(address(this));
-            uint256 strategistFee = _feesToSend.mul(STRATEGIST_FEE).div(MAX_FEE);
+            uint256 strategistFee = _feesToSend.mul(stratFee).div(MULTIPLIER);
             uint256 perFeeAmount = _feesToSend.sub(strategistFee);
             IERC20(native).safeTransfer(strategist, strategistFee); 
             IERC20(native).safeTransfer(perFeeRecipient, perFeeAmount);  
