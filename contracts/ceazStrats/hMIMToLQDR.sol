@@ -15,7 +15,7 @@ import "../../interfaces/ILQDR.sol";
 import "../../interfaces/ICeazor.sol";
 import "../utils/FeeManager.sol";
 
-contract hTokensToLQDR is FeeManager, Pausable {
+contract hMIMToLQDR is FeeManager, Pausable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -77,7 +77,7 @@ contract hTokensToLQDR is FeeManager, Pausable {
     function _deposit() internal whenNotPaused {
         uint256 wantBal = IERC20(want).balanceOf(address(this));
         if (wantBal > 0) {
-            ILQDR(LQDRFarm).deposit(LQDRPid, _hTknBal, (address(this)));
+            ILQDR(LQDRFarm).deposit(LQDRPid, wantBal, (address(this)));
         }
     }
   
@@ -117,9 +117,8 @@ contract hTokensToLQDR is FeeManager, Pausable {
             balancerSwap(HNDSwapPoolId, HND, native, _hndLeft);
             uint256 _nativeBal = IERC20(native).balanceOf(address(this));
             _swapNativeForMIM(_nativeBal);
-            uint256 _MIMBal - IERC20(MIM).balanceOf(address(this));
-            IHundred(hToken).mint(_MIMBal);
-            uint256 _hTknBal = IHundred(hToken).balanceOf(address(this)); 
+            uint256 _MIMBal = IERC20(MIM).balanceOf(address(this));
+            IHundred(want).mint(_MIMBal);
             uint256 wantHarvested = balanceOfWant();
             _deposit();
             lastHarvest = block.timestamp;
@@ -151,7 +150,7 @@ contract hTokensToLQDR is FeeManager, Pausable {
             IUniswapV2Router01(unirouter).swapExactTokensForTokens(
                 _nativeBal,
                 1,
-                getTokenOutPath(address(native), address(want)),
+                getTokenOutPath(address(native), address(MIM)),
                 address(this),
                 block.timestamp
             );
@@ -243,19 +242,17 @@ contract hTokensToLQDR is FeeManager, Pausable {
 
     //sets global allowances during deployment, and revokes when paused/panic'd.
     function _giveAllowances() internal {
-        IERC20(MIM).safeApprove(hToken, type(uint256).max);
+        IERC20(MIM).safeApprove(want, type(uint256).max);
         IERC20(want).safeApprove(LQDRFarm, type(uint256).max);
         IERC20(HND).safeApprove(bRouter, type(uint256).max);
-        IERC20(liHNDBPT).safeApprove(ceazliHND, type(uint256).max);
         IERC20(native).safeApprove(bRouter, type(uint256).max);
         IERC20(native).safeApprove(unirouter, type(uint256).max);
 
     }
     function _removeAllowances() internal {
-        IERC20(MIM).safeApprove(hToken, 0);
+        IERC20(MIM).safeApprove(want, 0);
         IERC20(want).safeApprove(LQDRFarm, 0);
         IERC20(HND).safeApprove(bRouter, 0);
-        IERC20(liHNDBPT).safeApprove(ceazliHND, 0);
         IERC20(native).safeApprove(bRouter, 0);
         IERC20(native).safeApprove(unirouter, 0);
     }
