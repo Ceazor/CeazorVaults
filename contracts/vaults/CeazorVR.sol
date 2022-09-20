@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "../../interfaces/IStrategy.sol";
 
 
-pragma solidity ^0.8.11;w
+pragma solidity ^0.8.11;
 
 contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
