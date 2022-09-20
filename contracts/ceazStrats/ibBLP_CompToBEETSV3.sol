@@ -29,7 +29,7 @@ contract IBBPTCompounderToBAL  is FeeManager, Pausable {
     address public reward = address(0x00a35FD824c717879BF370E70AC6868b95870Dfb); // IB
     address[] public lpTokens;
     
-    address public vault;                                                                 
+    address public vault; 
 
 // Third party contracts
     address public bRouter = address(0xBA12222222228d8Ba445958a75a0704d566BF2C8);   // Beethoven Swap route (The VAULT) same on OP?
@@ -54,15 +54,14 @@ contract IBBPTCompounderToBAL  is FeeManager, Pausable {
     constructor(
         address _vault             
     ) {  
-        vault = _vault;
-        
+        vault = _vault;        
         (lpTokens,,) = IBalancerVault(bRouter).getPoolTokens(wantPoolId);
-
         swapKind = IBalancerVault.SwapKind.GIVEN_IN;
         funds = IBalancerVault.FundManagement(address(this), false, payable(address(this)), false);
 
         _giveAllowances();
     }
+
     function beforeDeposit() external {
         if (harvestOnDeposit) {
             require(msg.sender == vault, "only the vault anon!");  
@@ -142,8 +141,7 @@ contract IBBPTCompounderToBAL  is FeeManager, Pausable {
         IERC20(native).safeTransfer(perFeeRecipient, perFeeAmount);  
 
 
-        }
-
+    }
     function sendXCheese() internal{
         uint256 _BALBal = IERC20(BAL).balanceOf(address(this));
         uint256 _XCheeseCut = _BALBal.mul(xCheeseRate).div(100);
@@ -250,8 +248,7 @@ contract IBBPTCompounderToBAL  is FeeManager, Pausable {
     }
 
     // SWEEPERS yup yup ser
-    function _inCaseTokensGetStuck(address _token, address _to, uint _amount) internal {
-        require(_token != address(want), "you gotta rescue your own deposits");
+    function inCaseTokensGetStuck(address _token, address _to, uint _amount) public onlyOwner {
         IERC20(_token).safeTransfer(_to, _amount);
     }
 

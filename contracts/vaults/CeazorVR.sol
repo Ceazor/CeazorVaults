@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "../../interfaces/IStrategy.sol";
 
 
-pragma solidity ^0.8.11;
+pragma solidity ^0.8.11;w
 
 contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -30,14 +30,14 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
     uint public constructionTime;
     IERC20 public want;
     uint256 public approvalDelay = 3600; //delay between strat changes, preset to 1 hour
+    address[] public frenz;                                                                
+
 
     mapping (address => uint) public cumulativeDeposits;
     mapping (address => uint) public cumulativeWithdrawals;
 
     event NewStratCandidate(address implementation);
     event UpgradeStrat(address implementation);
-    event TermsAccepted(address user);
-
     event DepositsIncremented(address user, uint amount, uint total);
     event WithdrawalsIncremented(address user, uint amount, uint total);
 
@@ -51,6 +51,37 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
     ) {
         want = IERC20(_want);
         constructionTime = block.timestamp;       
+    }
+
+    function addFren(address newFren) public onlyOwner {
+        frenz[newFren] = true;
+    } 
+    function unFren(address exFren) public onlyOwner {
+        frenz[exFren] = false;
+    }
+
+    function depositAll() external {
+        require(frenz[msg.sender], "yer not Ceazor's fren?");
+        deposit(want.balanceOf(msg.sender));
+    }
+    function deposit(uint _amount) public nonReentrant {
+        require(frenz[msg.sender], "yer not Ceazor's fren?");
+        require(_amount > 0, "Why are you depositing 0 tokens?");
+        uint256 _pool = balance();
+        uint256 _before = want.balanceOf(address(this));
+        want.safeTransferFrom(msg.sender, address(this), _amount);
+        uint256 _after = want.balanceOf(address(this));
+        _amount = _after.sub(_before);
+        uint256 _amountAfterDeposit = (_amount.mul(PERCENT_DIVISOR.sub(depositFee))).div(PERCENT_DIVISOR);
+        uint256 shares = 0;
+        if (totalSupply() == 0) {
+            shares = _amountAfterDeposit;
+        }else {
+            shares = (_amountAfterDeposit.mul(totalSupply())).div(_pool);
+        }
+        _mint(msg.sender, shares);
+        earn();
+        incrementDeposits(_amount);
     }
      
     //Connects the vault to its initial strategy. One use only.
@@ -71,27 +102,6 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
         return totalSupply() == 0 ? 1e18 : balance().mul(1e18).div(totalSupply());
     }
     //deposits users tokens into the vault, then puts them too work in the farms
-    function depositAll() external {
-        deposit(want.balanceOf(msg.sender));
-    }
-    function deposit(uint _amount) public nonReentrant {
-        require(_amount > 0, "Why are you depositing 0 want?");
-        uint256 _pool = balance();
-        uint256 _before = want.balanceOf(address(this));
-        want.safeTransferFrom(msg.sender, address(this), _amount);
-        uint256 _after = want.balanceOf(address(this));
-        _amount = _after.sub(_before);
-        uint256 _amountAfterDeposit = (_amount.mul(PERCENT_DIVISOR.sub(depositFee))).div(PERCENT_DIVISOR);
-        uint256 shares = 0;
-        if (totalSupply() == 0) {
-            shares = _amountAfterDeposit;
-        }else {
-            shares = (_amountAfterDeposit.mul(totalSupply())).div(_pool);
-        }
-        _mint(msg.sender, shares);
-        earn();
-        incrementDeposits(_amount);
-    }
 
     //Usually called by deposit() but puts money in vault to work
     function earn() public {
