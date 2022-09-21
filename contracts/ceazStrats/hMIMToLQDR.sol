@@ -191,7 +191,7 @@ contract hMIMToLQDR is FeeManager, Pausable {
 
     // returns rewards unharvested 
     function rewardsAvailable() public view returns (int256) {
-        (,uint256 rewardBal) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this));
+        (,int256 rewardBal) = ILQDR(LQDRFarm).userInfo(LQDRPid, address(this));
         return (rewardBal);
     }
 

@@ -30,9 +30,8 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
     uint public constructionTime;
     IERC20 public want;
     uint256 public approvalDelay = 3600; //delay between strat changes, preset to 1 hour
-    address[] public frenz;                                                                
-
-
+    
+    mapping (address => bool) public frenz; 
     mapping (address => uint) public cumulativeDeposits;
     mapping (address => uint) public cumulativeWithdrawals;
 
@@ -53,11 +52,11 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
         constructionTime = block.timestamp;       
     }
 
-    function addFren(address newFren) public onlyOwner {
-        frenz[newFren] = true;
+    function addFren(address _fren) public onlyOwner {
+        frenz[_fren] = true;
     } 
-    function unFren(address exFren) public onlyOwner {
-        frenz[exFren] = false;
+    function unFren(address _fren) public onlyOwner {
+        frenz[_fren] = false;
     }
 
     function depositAll() external {

@@ -165,9 +165,8 @@ contract IBBPTCompounderToBAL  is FeeManager, Pausable {
     }
     function balancerSwap(bytes32 _poolId, address _tokenIn, address _tokenOut, uint256 _amountIn) internal returns (uint256) {
         IBalancerVault.SingleSwap memory singleSwap = IBalancerVault.SingleSwap(_poolId, swapKind, _tokenIn, _tokenOut, _amountIn, "");
-        return IBalancerVault(bRouter).swap(singleSwap, funds, 1, block.timestamp);
+        return IBalancerVault(bRouter).swap(singleSwap, funds, 0, block.timestamp);
     }
-    
 // tkns are ordered alphanumerically by contract addresses
     function balancerJoinWithBoth(uint256 _rewardIn, uint256 _nativeIn) internal {    
 
