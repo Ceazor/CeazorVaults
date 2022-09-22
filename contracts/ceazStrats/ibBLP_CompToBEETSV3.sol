@@ -96,7 +96,6 @@ contract IBBPTCompounderToBAL  is FeeManager, Pausable {
         }
 
         IERC20(want).safeTransfer(vault, wantBal);
-
         emit Withdraw(balanceOf());
     }
 
