@@ -28,6 +28,8 @@ contract ExtraCheese is LPTokenWrapper, Ownable {
     uint256 public rewardRate = 0;
     uint256 public lastUpdateTime;
     uint256 public rewardPerTokenStored;
+    address public keeper = address(0x6EDe1597c05A0ca77031cBA43Ab887ccf24cd7e8); //preset to Gelato on Fantom
+
 
     mapping(address => uint256) public userRewardPerTokenPaid;
     mapping(address => uint256) public rewards;
@@ -113,11 +115,10 @@ contract ExtraCheese is LPTokenWrapper, Ownable {
     }
 
     // Calculates the reward rate based on the duration and tokens in the contract.
-    function notifyRewardAmount()  
-        external
-        onlyOwner
+    function notifyRewardAmount() external
         updateReward(address(0))
     {
+        require(msg.sender == owner() || msg.sender == keeper, "only the key mastas can harvest");
         uint256 reward = IERC20(rewardToken).balanceOf(address(this));  // balance of tkns in contract now
         require(reward != 0, "you gotta fill'r up ser");                             // make sure not = 0
         rewardRate = reward.div(duration);                              
@@ -166,5 +167,8 @@ contract ExtraCheese is LPTokenWrapper, Ownable {
     // added this to avoide import error statements. from @openzeppelin3.0/contracts/utils/Context.sol
     function _msgSender() internal view virtual override returns (address) {
         return msg.sender;
+    }
+    function setKeeper(address _keeper) external onlyOwner {
+        keeper = _keeper;
     }
 }
