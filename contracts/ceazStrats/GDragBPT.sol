@@ -25,7 +25,7 @@ contract GDragBPT  is FeeManager, Pausable {
     address public native = address(0x4200000000000000000000000000000000000006); //weth on op
     address public rETH = address(0x9Bcef72be871e61ED4fBbc7630889beE758eb81D);
     address public BAL = address(0xFE8B128bA8C78aabC59d4c64cEE7fF28e9379921);
-    address public OP = address(0x4200000000000000000000000000000000000042); 
+    address public rpBAL = address(0xd0d334B6CfD77AcC94bAB28C7783982387856449);
     address public want = address(0x785F08fB77ec934c01736E30546f87B4daccBe50); //ibBPT "galactic dragon"
     address public IB = address(0x00a35FD824c717879BF370E70AC6868b95870Dfb); // IB
     address[] public lpTokens;
@@ -36,8 +36,8 @@ contract GDragBPT  is FeeManager, Pausable {
     address public bRouter = address(0xBA12222222228d8Ba445958a75a0704d566BF2C8);   // Beethoven Swap route (The VAULT) same on OP?
     address public chef = address(0x1C438149E3e210233FCE91eeE1c097d34Fd655c2);      //this is called a gauge on OP
     address public helper = address(0x299dcDF14350999496204c141A0c20A29d71AF3E);     //just used for claim, pending()
-    bytes32 public BALPoolId = bytes32(0xd6e5824b54f64ce6f1161210bc17eebffc77e031000100000000000000000006);        // only need this to sell BAL. w
-    bytes32 public OPPoolId = bytes32(0xb0de49429fbb80c635432bbad0b3965b2856017700010000000000000000004e);
+    bytes32 public BALPoolId = bytes32(0xd0d334b6cfd77acc94bab28c778398238785644900000000000000000000004d);        // only need this to sell BAL. w
+    bytes32 public rpBALPoolId = bytes32(0x359ea8618c405023fc4b98dab1b01f373792a12600010000000000000000004f);
     bytes32 public IBPoolId = bytes32(0x785f08fb77ec934c01736e30546f87b4daccbe50000200000000000000000041); //??? this right?
     bytes32 public wantPoolId = bytes32(0x785f08fb77ec934c01736e30546f87b4daccbe50000200000000000000000041);
     bytes32 public rETHPoolId = bytes32(0x4fd63966879300cafafbb35d157dc5229278ed2300020000000000000000002b);
@@ -128,9 +128,9 @@ contract GDragBPT  is FeeManager, Pausable {
         }
         uint256 BALBalFees = BALBal.mul(totalFee).div(MULTIPLIER);
         if (BALBalFees > 0) {
-            balancerSwap(BALPoolId, BAL, OP, BALBalFees);
-            uint256 OPBal = IERC20(OP).balanceOf(address(this));
-            balancerSwap(OPPoolId, OP, rETH, OPBal);
+            balancerSwap(BALPoolId, BAL, rpBAL, BALBalFees);
+            uint256 rpBALamt = IERC20(rpBAL).balanceOf(address(this));
+            balancerSwap(rpBALPoolId, rpBAL, rETH, rpBALamt);
         }
         uint256 _FeesInrETHBal = IERC20(rETH).balanceOf(address(this));
 
@@ -151,9 +151,11 @@ contract GDragBPT  is FeeManager, Pausable {
         }
         uint256 _BALLeft = IERC20(BAL).balanceOf(address(this));
         if (_BALLeft > 0){
-            balancerSwap(BALPoolId, BAL, OP, _BALLeft);
-            uint256 OPBal = IERC20(OP).balanceOf(address(this));
-            balancerSwap(BALPoolId, OP, native, OPBal);
+            balancerSwap(BALPoolId, BAL, rpBAL, _BALLeft);
+            uint256 _rpBALamt = IERC20(rpBAL).balanceOf(address(this));
+            balancerSwap(rpBALPoolId, rpBAL, rETH, _rpBALamt);
+            uint256 _rETHLeft = IERC20(rETH).balanceOf(address(this));
+            balancerSwap(rETHPoolId, rETH, native, _rETHLeft);
         }
     }
 // Adds liquidity to AMM and gets more LP tokens.

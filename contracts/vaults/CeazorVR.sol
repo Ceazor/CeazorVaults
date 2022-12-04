@@ -132,7 +132,6 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
         want.safeTransfer(msg.sender, r);
         incrementWithdrawals(r);
     }
-
     //stages a new strategy for vault, applying it is delayed but approvalDelay
     function proposeStrat(address _implementation) public onlyOwner {
         stratCandidate = StratCandidate({
@@ -145,7 +144,6 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
     function setDepositFee(uint256 fee) public onlyOwner {
         depositFee = fee;
     }
-
     //retires old strat, pulling all funds, then applies candidate strat, delayed but approvalDelay
     function upgradeStrat() public onlyOwner {
         require(stratCandidate.implementation != address(0), "There is no candidate");
@@ -160,7 +158,6 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
 
         earn();
     }
-
     function incrementDeposits(uint _amount) internal returns (bool) {
       uint initial = cumulativeDeposits[tx.origin];
       uint newTotal = initial + _amount;
@@ -168,7 +165,6 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
       emit DepositsIncremented(tx.origin, _amount, newTotal);
       return true;
     }
-
     function incrementWithdrawals(uint _amount) internal returns (bool) {
       uint initial = cumulativeWithdrawals[tx.origin];
       uint newTotal = initial + _amount;
@@ -176,8 +172,6 @@ contract CeazorVaultR is ERC20, Ownable, ReentrancyGuard {
       emit WithdrawalsIncremented(tx.origin, _amount, newTotal);
       return true;
     }    
-
-    //allows for getting tokens out of the contract, but NOT want
     function inCaseTokensGetStuck(address _want) external onlyOwner {
         require(_want != address(want), "!want");
 
