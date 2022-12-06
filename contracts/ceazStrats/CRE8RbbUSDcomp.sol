@@ -47,8 +47,7 @@ contract CRE8RbbUSD_comp_W_fBEETsXCheese is FeeManager, Pausable {
     address public beetsBPT = address(0xcdE5a11a4ACB4eE4c805352Cec57E236bdBC3837);
 
     address public rewarder = address(0x2503E68A3f9f67085BA6DcDF3B69A63E54Bcc6BC);  // this contract hold the CRE8R rewards
-    bytes32 public CRE8RPoolId = bytes32(0xbb4607bede4610e80d35c15692efcb7807a2d0a6000200000000000000000140);
-    bytes32 public wantPoolId = bytes32(0xbb4607bede4610e80d35c15692efcb7807a2d0a6000200000000000000000140);
+    bytes32 public wantPoolId = bytes32(0x8c63702d4d4a521a6a8ecec8ab8f7ce9d1d6299e000200000000000000000443);
 
     IBalancerVault.SwapKind public swapKind;
     IBalancerVault.FundManagement public funds;
@@ -199,7 +198,7 @@ contract CRE8RbbUSD_comp_W_fBEETsXCheese is FeeManager, Pausable {
             amounts, 
             userData, 
             false);
-        IBalancerVault(bRouter).joinPool(CRE8RPoolId, address(this), address(this), request);
+        IBalancerVault(bRouter).joinPool(wantPoolId, address(this), address(this), request);
     }
     function balancerJoinWithBeets(uint256 _amountIn) internal {    
 
@@ -313,8 +312,8 @@ contract CRE8RbbUSD_comp_W_fBEETsXCheese is FeeManager, Pausable {
         IERC20(CRE8R).safeApprove(bRouter, type(uint256).max);        
         IERC20(native).safeApprove(bRouter, type(uint256).max);
         IERC20(USDC).safeApprove(bRouter, type(uint256).max);
-        IERC20(bbUSDC).safeApprove(bRouter, type(uint256).max);
-        IERC20(bbUSD).safeApprove(bRouter, type(uint256).max);
+        // IERC20(bbUSDC).safeApprove(bRouter, type(uint256).max);
+        // IERC20(bbUSD).safeApprove(bRouter, type(uint256).max);
         IERC20(fBEETS).safeApprove(ceazFBeets, type(uint256).max);
         IERC20(beetsBPT).safeApprove(fBEETS, type(uint256).max);
     }
@@ -325,8 +324,8 @@ contract CRE8RbbUSD_comp_W_fBEETsXCheese is FeeManager, Pausable {
         IERC20(CRE8R).safeApprove(bRouter, 0);
         IERC20(native).safeApprove(bRouter, 0);
         IERC20(USDC).safeApprove(bRouter, 0);
-        IERC20(bbUSDC).safeApprove(bRouter, 0);
-        IERC20(bbUSD).safeApprove(bRouter, 0);
+        // IERC20(bbUSDC).safeApprove(bRouter, 0);
+        // IERC20(bbUSD).safeApprove(bRouter, 0);
         IERC20(fBEETS).safeApprove(ceazFBeets, 0);
         IERC20(beetsBPT).safeApprove(fBEETS, 0);
 
