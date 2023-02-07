@@ -17,16 +17,18 @@ import "../../interfaces/IBalancerVault.sol";
 import "../../interfaces/ICeazor.sol";
 import "../utils/FeeManager.sol";
 
-contract IBBPTCompounderToBAL  is FeeManager, Pausable {
+contract ibBPTComp  is FeeManager, Pausable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
 // Tokens used
-    address public native = address(0x4200000000000000000000000000000000000006); //weth on op
+    address public WETH = address(0x4200000000000000000000000000000000000006); //weth on op
+    address public rETH = address(0x9Bcef72be871e61ED4fBbc7630889beE758eb81D);
     address public BAL = address(0xFE8B128bA8C78aabC59d4c64cEE7fF28e9379921);
     address public OP = address(0x4200000000000000000000000000000000000042); 
-    address public want = address(0xeFb0D9F51EFd52d7589A9083A6d0CA4de416c249); //ibBPT "puff the magic dragon"
-    address public reward = address(0x00a35FD824c717879BF370E70AC6868b95870Dfb); // IB
+    address public want = address(0x785f08fb77ec934c01736e30546f87b4daccbe50); //ibBPT "galactic dragon"
+    address public IB = address(0x00a35FD824c717879BF370E70AC6868b95870Dfb); // IB
+    address public rETHBPT = address(0x4fd63966879300cafafbb35d157dc5229278ed23);
     address[] public lpTokens;
     
     address public vault; 
@@ -35,10 +37,10 @@ contract IBBPTCompounderToBAL  is FeeManager, Pausable {
     address public bRouter = address(0xBA12222222228d8Ba445958a75a0704d566BF2C8);   // Beethoven Swap route (The VAULT) same on OP?
     address public chef = address(0x3672884a609bFBb008ad9252A544F52dF6451A03);      //this is called a gauge on OP
     address public helper = address(0x299dcDF14350999496204c141A0c20A29d71AF3E);     //just used for claim, pending()
-    bytes32 public BALPoolId = bytes32(0xd6e5824b54f64ce6f1161210bc17eebffc77e031000100000000000000000006);        // only need this to sell beets. not at this point, viable
+    bytes32 public BALPoolId = bytes32(0xd6e5824b54f64ce6f1161210bc17eebffc77e031000100000000000000000006);    // to sell BAL.
     bytes32 public OPPoolId = bytes32(0x39965c9dab5448482cf7e002f583c812ceb53046000100000000000000000003);
-    bytes32 public rewardPoolId = bytes32(0xefb0d9f51efd52d7589a9083a6d0ca4de416c24900020000000000000000002c);
-    bytes32 public wantPoolId = bytes32(0xefb0d9f51efd52d7589a9083a6d0ca4de416c24900020000000000000000002c);
+    bytes32 public rETHPoolId = bytes32(0x4fd63966879300cafafbb35d157dc5229278ed2300020000000000000000002b);
+    bytes32 public IBPoolId = bytes32  (0x785f08fb77ec934c01736e30546f87b4daccbe50000200000000000000000041);
 
     IBalancerVault.SwapKind public swapKind;
     IBalancerVault.FundManagement public funds;
@@ -104,11 +106,11 @@ contract IBBPTCompounderToBAL  is FeeManager, Pausable {
         _harvest();
     }
     function _harvest() internal whenNotPaused {
-        IBalancerGaugeHelper(helper).claimRewards(chef, address(this));
+        IBalancerGaugeHelper(helper).claimIBs(chef, address(this));
         uint256 BALBal = IERC20(BAL).balanceOf(address(this));   
-        uint256 rewardBal = IERC20(reward).balanceOf(address(this));   
-        if (BALBal > 0 || rewardBal > 0) {
-            chargeFees(BALBal, rewardBal);
+        uint256 IBBal = IERC20(IB).balanceOf(address(this));   
+        if (BALBal > 0 || IBBal > 0) {
+            chargeFees(BALBal, IBBal);
             sendXCheese();
             addLiquidity();
             uint256 wantHarvested = balanceOfWant();
@@ -120,71 +122,94 @@ contract IBBPTCompounderToBAL  is FeeManager, Pausable {
     }
 
 // performance fees
-    function chargeFees(uint256 BALBal, uint256 rewardBal) internal {
-        uint256 BALBalFees = BALBal.mul(totalFee).div(MULTIPLIER);
-        if (BALBalFees > 0) {
-            balancerSwap(BALPoolId, BAL, OP, BALBalFees);
+    function chargeFees(uint256 BALBal, uint256 IBBal) internal {
+        //sells all the BAL to ETH
+        if (BALBal > 0) {
+            balancerSwap(BALPoolId, BAL, OP, BALBal);
             uint256 OPBal = IERC20(OP).balanceOf(address(this));
-            balancerSwap(OPPoolId, OP, native, OPBal); 
+            balancerSwap(OPPoolId, OP, WETH, OPBal);
         }
-        uint256 rewardBalFees = rewardBal.mul(totalFee).div(MULTIPLIER);
-        if (rewardBalFees > 0) {
-            balancerSwap(rewardPoolId, reward, native, rewardBalFees);  
+        //sells only enough IB to pay fees in in WETH -IB->rETH->WETH
+        if (IBBal > 0){
+            uint256 IBBalFees = IBBal.mul(totalFee).div(MULTIPLIER);
+                if (IBBalFees > 0) {
+                    balancerSwap(IBPoolId, IB, rETH, IBBalFees);
+                    uint256 rETHtoWETH = IERC20(rETH).balanceOf(address(this));
+                    balancerSwap(rETHPoolId, rETH, WETH, rETHtoWETH); 
+                }
         }
-        uint256 _FeesInNativeBal = IERC20(native).balanceOf(address(this));
+        //calcs how much ETH to pay fees
+        uint256 WETHBal = IERC20(WETH).balanceOf(address(this));
+        uint256 WETHFees = WETHBal.mul(totalFee).div(MULTIPLIER);
 
-        uint256 strategistFee = _FeesInNativeBal.mul(stratFee).div(MULTIPLIER);
-        IERC20(native).safeTransfer(strategist, strategistFee);
-
-        uint256 perFeeAmount = _FeesInNativeBal.sub(strategistFee);
-        IERC20(native).safeTransfer(perFeeRecipient, perFeeAmount);  
+        //sends fees
+        uint256 strategistFee = WETHFees.mul(stratFee).div(MULTIPLIER);
+        IERC20(WETH).safeTransfer(strategist, strategistFee);
+        uint256 perFeeAmount = WETHFee.sub(strategistFee);
+        IERC20(WETH).safeTransfer(perFeeRecipient, perFeeAmount);  
 
 
     }
     function sendXCheese() internal{
-        uint256 _BALBal = IERC20(BAL).balanceOf(address(this));
-        uint256 _XCheeseCut = _BALBal.mul(xCheeseRate).div(100);
-        if (_XCheeseCut > 0) {
-            IERC20(BAL).safeTransfer(xCheeseRecipient, _XCheeseCut);          
-        }
-        uint256 _BALLeft = IERC20(BAL).balanceOf(address(this));
-        if (_BALLeft > 0){
-            balancerSwap(BALPoolId, BAL, OP, _BALLeft);
-            uint256 OPBal = IERC20(OP).balanceOf(address(this));
-            balancerSwap(OPPoolId, OP, native, OPBal);
-        }
+        uint256 _WETHBal = IERC20(WETH).balanceOf(address(this));
+        uint256 _rETHBal = IERC20(rETH).balanceOf(address(this));
+        uint256 _XCheeseCut = _WETHBal.mul(xCheeseRate).div(100);
+        uint256 _XCheeseCutrETH = _rETHBal.mul(xCheeseRate).div(100);
+        balancerJoinRocket(_XCheeseCut, _XCHeeseCutrETH);
+        uint256 XCheese = IERC20(rETHBPT).balanceOf(address(this));
+        IERC20(rETHBPT).safeTransfer(xCheeseRecipient, XCheese);        
     }
-
 
 // Adds liquidity to AMM and gets more LP tokens.
     function addLiquidity() internal {
-        uint256 _nativeIn = IERC20(native).balanceOf(address(this));
-        uint256 _rewardIn = IERC20(reward).balanceOf(address(this));
-        balancerJoinWithBoth(_rewardIn, _nativeIn);
+        uint256 _WETHBAL = IERC20(WETH).balanceOf(address(this));
+        if(_WETHBal > 0){
+            balancerSwap(rETHPoolID, WETH, rETH, _WETHBal);
+        }
+        uint256 rETHIn = IERC20(rETH).balanceOf(address(this));
+        uint256 _IBIn = IERC20(IB).balanceOf(address(this));
+        balancerJoinWithBoth(_IBIn, _rETHIn);
     }
+    
     function balancerSwap(bytes32 _poolId, address _tokenIn, address _tokenOut, uint256 _amountIn) internal returns (uint256) {
         IBalancerVault.SingleSwap memory singleSwap = IBalancerVault.SingleSwap(_poolId, swapKind, _tokenIn, _tokenOut, _amountIn, "");
         return IBalancerVault(bRouter).swap(singleSwap, funds, 0, block.timestamp);
     }
+    // balancer IFunctions
 // tkns are ordered alphanumerically by contract addresses
-    function balancerJoinWithBoth(uint256 _rewardIn, uint256 _nativeIn) internal {    
-
+    function balancerJoinRocket(uint256 _WETHIn, uint256 _rETHIn) internal {
         uint256[] memory amounts = new uint256[](2);
-        amounts[1] = _nativeIn;
-        amounts[0] = _rewardIn;
+        amounts[1] = _WETHIn;
+        amounts[0] = _rETHIn;
         bytes memory userData = abi.encode(1, amounts, 1);
 
         address[] memory tokens = new address[](2);
-        tokens[1] = native;
-        tokens[0] = reward;
+        tokens[1] = WETH;
+        tokens[0] = rETH;
         IBalancerVault.JoinPoolRequest memory request = IBalancerVault.JoinPoolRequest(
             tokens, 
             amounts, 
             userData, 
             false);
-        IBalancerVault(bRouter).joinPool(wantPoolId, address(this), address(this), request);
+        IBalancerVault(bRouter).joinPool(rETHPoolId, address(this), address(this), request);
     }
+    function balancerJoinWithBoth(uint256 _IBIn, uint256 _WETHIn) internal {    
 
+        uint256[] memory amounts = new uint256[](2);
+        amounts[1] = _WETHIn;
+        amounts[0] = _IBIn;
+        bytes memory userData = abi.encode(1, amounts, 1);
+
+        address[] memory tokens = new address[](2);
+        tokens[1] = WETH;
+        tokens[0] = IB;
+        IBalancerVault.JoinPoolRequest memory request = IBalancerVault.JoinPoolRequest(
+            tokens, 
+            amounts, 
+            userData, 
+            false);
+        IBalancerVault(bRouter).joinPool(IBPoolId, address(this), address(this), request);
+    }
     // calculate the total underlaying 'want' held by the strat.
     function balanceOf() public view returns (uint256) {
         return balanceOfWant().add(balanceOfPool());
@@ -245,7 +270,7 @@ contract IBBPTCompounderToBAL  is FeeManager, Pausable {
         harvestOnDeposit = _harvestOnDeposit;
     }
 
-    // SWEEPERS yup yup ser
+    // SWEEPERS yup yup ser CEAZOR CAN TAKE IT ALL
     function inCaseTokensGetStuck(address _token, address _to, uint _amount) public onlyOwner {
         IERC20(_token).safeTransfer(_to, _amount);
     }
@@ -253,14 +278,18 @@ contract IBBPTCompounderToBAL  is FeeManager, Pausable {
     function _giveAllowances() internal {
         IERC20(want).safeApprove(chef, type(uint256).max);
         IERC20(BAL).safeApprove(bRouter, type(uint256).max);
-        IERC20(reward).safeApprove(bRouter, type(uint256).max);        
-        IERC20(native).safeApprove(bRouter, type(uint256).max);
+        IERC20(OP).safeApprove(bRouter, type(uint256).max);
+        IERC20(rETH).safeApprove(bRouter, type(uint256).max);
+        IERC20(IB).safeApprove(bRouter, type(uint256).max);        
+        IERC20(WETH).safeApprove(bRouter, type(uint256).max);
     }
 
     function _removeAllowances() internal {
         IERC20(want).safeApprove(chef, 0);
         IERC20(BAL).safeApprove(bRouter, 0);
-        IERC20(reward).safeApprove(bRouter, 0);
-        IERC20(native).safeApprove(bRouter, 0);
+        IERC20(OP).safeApprove(bRouter, 0);
+        IERC20(rETH).safeApprove(bRouter, 0);
+        IERC20(IB).safeApprove(bRouter, 0);
+        IERC20(WETH).safeApprove(bRouter, 0);
     }
 }

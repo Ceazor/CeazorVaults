@@ -32,29 +32,16 @@ contract CRE8RelCoda is FeeManager, Pausable {
     address public vault;
 
     // Third party contracts
-    address public bRouter =
-        address(0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce); // Beethoven Swap route (The VAULT)
+    address public bRouter = address(0x20dd72Ed959b6147912C2e529F0a0C651c33c9ce); // Beethoven Swap route (The VAULT)
     address public chef = address(0x8166994d9ebBe5829EC86Bd81258149B87faCfd3); //this will be the same for all fantom pairs
     uint256 public chefPoolId = 100; //CRE8R Gauge PID
-    bytes32 public beetsUSDCPoolId = (
-        0x03c6b3f09d2504606936b1a4decefad204687890000200000000000000000015
-    ); //BEETS:USDC
-    bytes32 public beetswFTMPoolId =
-        bytes32(
-            0xcde5a11a4acb4ee4c805352cec57e236bdbc3837000200000000000000000019
-        );
-    bytes32 public USDCwFTMPoolId = (
-        0x56ad84b777ff732de69e85813daee1393a9ffe1000020000000000000000060e
-    ); //USDC:wFTM
-    address public ceazFBeets =
-        address(0x58E0ac1973F9d182058E6b63e7F4979bc333f493);
+    bytes32 public beetsUSDCPoolId = bytes32(0x03c6b3f09d2504606936b1a4decefad204687890000200000000000000000015); //BEETS:USDC
+    bytes32 public beetswFTMPoolId = bytes32(0xcde5a11a4acb4ee4c805352cec57e236bdbc3837000200000000000000000019);
+    bytes32 public USDCwFTMPoolId = bytes32(0x56ad84b777ff732de69e85813daee1393a9ffe1000020000000000000000060e); //USDC:wFTM
+    address public ceazFBeets = address(0x58E0ac1973F9d182058E6b63e7F4979bc333f493);
     address public fBEETS = address(0xfcef8a994209d6916EB2C86cDD2AFD60Aa6F54b1);
-    address public beetsBPT =
-        address(0xcdE5a11a4ACB4eE4c805352Cec57E236bdBC3837);
-    bytes32 public wantPoolId =
-        bytes32(
-            0xa1bfdf81ed709283c03ce5c78b105f39fd7fe119000200000000000000000609
-        );
+    address public beetsBPT = address(0xcdE5a11a4ACB4eE4c805352Cec57E236bdBC3837);
+    bytes32 public wantPoolId = bytes32(0xa1bfdf81ed709283c03ce5c78b105f39fd7fe119000200000000000000000609);
 
     IBalancerVault.SwapKind public swapKind;
     IBalancerVault.FundManagement public funds;
@@ -245,7 +232,7 @@ contract CRE8RelCoda is FeeManager, Pausable {
         bytes memory userData = abi.encode(1, amounts, 1);
 
         address[] memory tokens = new address[](2);
-        tokens[0] = native;
+        tokens[0] = USDC;
         tokens[1] = Beets;
         IBalancerVault.JoinPoolRequest memory request =
             IBalancerVault.JoinPoolRequest(tokens, amounts, userData, false);
