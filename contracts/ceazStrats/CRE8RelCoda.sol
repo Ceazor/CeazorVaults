@@ -22,12 +22,11 @@ contract CRE8RelCoda is FeeManager, Pausable {
     using SafeMath for uint256;
 
     // Tokens used
-    address public native = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83); //wftm but if pool doesnt use need to change this
     address public Beets = address(0xF24Bcf4d1e507740041C9cFd2DddB29585aDCe1e);
     address public CRE8R = address(0x2aD402655243203fcfa7dCB62F8A08cc2BA88ae0);
     address public USDC = address(0x04068DA6C83AFCFA0e13ba15A6696662335D5B75);
     address public wFTM = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83);
-    address public want = address(); //CRE8R BPT
+    address public want = address(0xA1BfDf81eD709283C03Ce5C78B105f39FD7fE119); //CRE8R BPT
     address[] public lpTokens;
 
     address public vault;
@@ -157,15 +156,15 @@ contract CRE8RelCoda is FeeManager, Pausable {
         uint256 strategistFee = BeetsBalFees.mul(stratFee).div(MULTIPLIER);
         if (strategistFee > 0) {
             balancerSwap(beetsUSDCPoolId, Beets, USDC, strategistFee);
-            uint256 USDCforStrat = USDC.balanceOf(address(this));
+            uint256 USDCforStrat = IERC20(USDC).balanceOf(address(this));
+            IERC20(USDC).safeTransfer(strategist, USDCforStrat);
         }
         uint256 perFeeAmount = BeetsBalFees.sub(strategistFee);
         if (perFeeAmount > 0) {
             balancerSwap(beetswFTMPoolId, Beets, wFTM, perFeeAmount);
-            uint256 wFTMforKeeper = wFTM.balanceOf(address(this));
+            uint256 wFTMforKeeper = IERC20(wFTM).balanceOf(address(this));
+            IERC20(wFTM).safeTransfer(perFeeRecipient, wFTMforKeeper);
         }
-        IERC20(USDC).safeTransfer(strategist, USDCforStrat);
-        IERC20(wFTM).safeTransfer(perFeeRecipient, wFTMforKeeper);
     }
 
     function sendXCheese() internal {
@@ -196,7 +195,7 @@ contract CRE8RelCoda is FeeManager, Pausable {
     // Adds liquidity to AMM and gets more LP tokens.
     function addLiquidity() internal {
         uint256 _USDCIn = IERC20(USDC).balanceOf(address(this));
-        uint256 _CRE8RIn = IERC20(reward).balanceOf(address(this));
+        uint256 _CRE8RIn = IERC20(CRE8R).balanceOf(address(this));
         balancerJoinWithBoth(_CRE8RIn, _USDCIn);
     }
 
@@ -298,7 +297,7 @@ contract CRE8RelCoda is FeeManager, Pausable {
     }
 
     // returns rewards unharvested
-    function rewardsAvailable() public view returns (uint256, uint256) {
+    function rewardsAvailable() public view returns (uint256) {
         uint256 BeetsBal =
             IBeethovenxChef(chef).pendingBeets(chefPoolId, address(this));
         return (BeetsBal);
