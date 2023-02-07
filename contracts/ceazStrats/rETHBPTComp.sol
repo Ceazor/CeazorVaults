@@ -26,14 +26,14 @@ contract rETHBPTComp  is FeeManager, Pausable {
     address public rETH = address(0x9Bcef72be871e61ED4fBbc7630889beE758eb81D);
     address public BAL = address(0xFE8B128bA8C78aabC59d4c64cEE7fF28e9379921);
     address public OP = address(0x4200000000000000000000000000000000000042); 
-    address public want = address(0x4fd63966879300cafafbb35d157dc5229278ed23); //ibBPT "RocketPool"
+    address public want = address(0x4Fd63966879300caFafBB35D157dC5229278Ed23); //ibBPT "RocketPool"
     address[] public lpTokens;
     
     address public vault; 
 
 // Third party contracts
     address public bRouter = address(0xBA12222222228d8Ba445958a75a0704d566BF2C8);   // Beethoven Swap route (The VAULT) same on OP?
-    address public gauge = address(0x38f79beffc211c6c439b0a3d10a0a673ee63afb4);      //stake want here
+    address public gauge = address(0x38f79beFfC211c6c439b0A3d10A0A673EE63AFb4);      //stake want here
     address public helper = address(0x299dcDF14350999496204c141A0c20A29d71AF3E);     //just used for claim, pending()
     bytes32 public BALPoolId = bytes32(0xd6e5824b54f64ce6f1161210bc17eebffc77e031000100000000000000000006);    // to sell BAL->OP.
     bytes32 public OPPoolId = bytes32(0x39965c9dab5448482cf7e002f583c812ceb53046000100000000000000000003);
@@ -56,7 +56,7 @@ contract rETHBPTComp  is FeeManager, Pausable {
         address _vault             
     ) {  
         vault = _vault;        
-        (lpTokens,,) = IBalancerVault(bRouter).getPoolTokens(wantPoolId);
+        (lpTokens,,) = IBalancerVault(bRouter).getPoolTokens(rETHPoolId);
         swapKind = IBalancerVault.SwapKind.GIVEN_IN;
         funds = IBalancerVault.FundManagement(address(this), false, payable(address(this)), false);
 
@@ -107,7 +107,7 @@ contract rETHBPTComp  is FeeManager, Pausable {
     function _harvest() internal whenNotPaused {
         IBalancerGaugeHelper(helper).claimRewards(gauge, address(this));
         uint256 BALBal = IERC20(BAL).balanceOf(address(this));   
-        uint256 OPBal = IERC20(IB).balanceOf(address(this));   
+        uint256 OPBal = IERC20(OP).balanceOf(address(this));   
         if (BALBal > 0 || OPBal > 0) {
             chargeFees(BALBal, OPBal);
             addLiquidity();
@@ -121,7 +121,7 @@ contract rETHBPTComp  is FeeManager, Pausable {
 
 // performance fees
     function chargeFees(uint256 BALBal, uint256 OPBal) internal {
-        //sells all the BAL to ETH
+        //sells all the BAL and OP to ETH
         if (BALBal > 0) {
             balancerSwap(BALPoolId, BAL, OP, BALBal);
         }
@@ -133,7 +133,7 @@ contract rETHBPTComp  is FeeManager, Pausable {
         //sends fees
         uint256 strategistFee = WETHFees.mul(stratFee).div(MULTIPLIER);
         IERC20(WETH).safeTransfer(strategist, strategistFee);
-        uint256 perFeeAmount = WETHFee.sub(strategistFee);
+        uint256 perFeeAmount = WETHFees.sub(strategistFee);
         IERC20(WETH).safeTransfer(perFeeRecipient, perFeeAmount); 
     }
 
@@ -141,7 +141,7 @@ contract rETHBPTComp  is FeeManager, Pausable {
     function addLiquidity() internal {
         uint256 _WETHIn = IERC20(WETH).balanceOf(address(this));
         uint256 _rETHIn = IERC20(rETH).balanceOf(address(this));
-        balancerJoinRocket(_WETHBIn, _rETHIn);
+        balancerJoinRocket(_WETHIn, _rETHIn);
     }
     
     function balancerSwap(bytes32 _poolId, address _tokenIn, address _tokenOut, uint256 _amountIn) internal returns (uint256) {
@@ -237,7 +237,6 @@ contract rETHBPTComp  is FeeManager, Pausable {
         IERC20(BAL).safeApprove(bRouter, type(uint256).max);
         IERC20(OP).safeApprove(bRouter, type(uint256).max);
         IERC20(rETH).safeApprove(bRouter, type(uint256).max);
-        IERC20(IB).safeApprove(bRouter, type(uint256).max);        
         IERC20(WETH).safeApprove(bRouter, type(uint256).max);
     }
 
@@ -246,7 +245,6 @@ contract rETHBPTComp  is FeeManager, Pausable {
         IERC20(BAL).safeApprove(bRouter, 0);
         IERC20(OP).safeApprove(bRouter, 0);
         IERC20(rETH).safeApprove(bRouter, 0);
-        IERC20(IB).safeApprove(bRouter, 0);
         IERC20(WETH).safeApprove(bRouter, 0);
     }
 }
