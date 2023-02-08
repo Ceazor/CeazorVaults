@@ -179,13 +179,13 @@ contract ibBPTComp  is FeeManager, Pausable {
 // tkns are ordered alphanumerically by contract addresses
     function balancerJoinRocket(uint256 _WETHIn, uint256 _rETHIn) internal {
         uint256[] memory amounts = new uint256[](2);
-        amounts[1] = _WETHIn;
-        amounts[0] = _rETHIn;
+        amounts[0] = _WETHIn;
+        amounts[1] = _rETHIn;
         bytes memory userData = abi.encode(1, amounts, 1);
 
         address[] memory tokens = new address[](2);
-        tokens[1] = WETH;
-        tokens[0] = rETH;
+        tokens[0] = WETH;
+        tokens[1] = rETH;
         IBalancerVault.JoinPoolRequest memory request = IBalancerVault.JoinPoolRequest(
             tokens, 
             amounts, 
