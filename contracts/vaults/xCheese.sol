@@ -28,7 +28,7 @@ contract ExtraCheese is LPTokenWrapper, Ownable {
     uint256 public rewardRate = 0;
     uint256 public lastUpdateTime;
     uint256 public rewardPerTokenStored;
-    address public keeper = address(0x6EDe1597c05A0ca77031cBA43Ab887ccf24cd7e8); //preset to Gelato on Fantom
+    address public keeper; //preset to Gelato on Fantom
 
 
     mapping(address => uint256) public userRewardPerTokenPaid;
@@ -39,11 +39,12 @@ contract ExtraCheese is LPTokenWrapper, Ownable {
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
 
-    constructor(address _stakedToken, address _rewardToken)
+    constructor(address _stakedToken, address _rewardToken, address _keeper)
         
         LPTokenWrapper(_stakedToken)
     {
         rewardToken = IERC20(_rewardToken);
+        keeper = _keeper;
     }
 
     modifier updateReward(address account) {

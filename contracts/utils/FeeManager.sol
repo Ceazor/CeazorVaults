@@ -20,6 +20,7 @@ abstract contract FeeManager is Ownable {
     address public xCheeseRecipient =
         address(0x699675204aFD7Ac2BB146d60e4E3Ddc243843519); // preset to owner CHANGE ASAP
     address public keeper = address(0x6EDe1597c05A0ca77031cBA43Ab887ccf24cd7e8); //preset to Gelato on Fantom
+    address public xCheeseContract;
 
     function setTotalFee(uint256 _totalFee) public onlyOwner {
         require(_totalFee <= MAX_TOTAL_FEE, "cant tax that much");
@@ -50,8 +51,15 @@ abstract contract FeeManager is Ownable {
     function setxCheeseRecipient(address _address) public onlyOwner {
         xCheeseRecipient = _address;
     }
+    function setxCheeseContract(address _address) public onlyOwner{
+        xCheeseContract = _address;
+        xCheeseRecipient = _address;
+    }
 
     // keeper is to grant harvest() rights
+    // keeper OP 0x340759c8346A1E6Ed92035FB8B6ec57cE1D82c2c
+    // keeper FTM 0x6EDe1597c05A0ca77031cBA43Ab887ccf24cd7e8
+    // keeper ARB 0xB3f5503f93d5Ef84b06993a1975B9D21B962892F
     function setKeeper(address _keeper) external onlyOwner {
         keeper = _keeper;
     }

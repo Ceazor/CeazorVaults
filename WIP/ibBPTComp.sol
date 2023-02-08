@@ -15,6 +15,7 @@ import "../../interfaces/IBalancerGauge.sol";
 import "../../interfaces/IBalancerGaugeHelper.sol";
 import "../../interfaces/IBalancerVault.sol";
 import "../../interfaces/ICeazor.sol";
+import "../../interfaces/IxCheese.sol";
 import "../utils/FeeManager.sol";
 
 contract ibBPTComp  is FeeManager, Pausable {
@@ -30,7 +31,7 @@ contract ibBPTComp  is FeeManager, Pausable {
     address public IB = address(0x00a35FD824c717879BF370E70AC6868b95870Dfb); // IB
     address public rETHBPT = address(0x4fd63966879300cafafbb35d157dc5229278ed23);
     address[] public lpTokens;
-    
+// Internal Varis    
     address public vault; 
 
 // Third party contracts
@@ -41,6 +42,7 @@ contract ibBPTComp  is FeeManager, Pausable {
     bytes32 public OPPoolId = bytes32(0x39965c9dab5448482cf7e002f583c812ceb53046000100000000000000000003);
     bytes32 public rETHPoolId = bytes32(0x4fd63966879300cafafbb35d157dc5229278ed2300020000000000000000002b);
     bytes32 public IBPoolId = bytes32  (0x785f08fb77ec934c01736e30546f87b4daccbe50000200000000000000000041);
+    
 
     IBalancerVault.SwapKind public swapKind;
     IBalancerVault.FundManagement public funds;
@@ -94,7 +96,7 @@ contract ibBPTComp  is FeeManager, Pausable {
         }
 
         if (wantBal > _amount) {
-            wantBal = _amount;
+            _amount = _amount;
         }
 
         IERC20(want).safeTransfer(vault, wantBal);
@@ -108,9 +110,10 @@ contract ibBPTComp  is FeeManager, Pausable {
     function _harvest() internal whenNotPaused {
         IBalancerGaugeHelper(helper).claimIBs(chef, address(this));
         uint256 BALBal = IERC20(BAL).balanceOf(address(this));   
-        uint256 IBBal = IERC20(IB).balanceOf(address(this));   
-        if (BALBal > 0 || IBBal > 0) {
-            chargeFees(BALBal, IBBal);
+        uint256 IBBal = IERC20(IB).balanceOf(address(this)); 
+        uint256 OPBal = IERC20(OP).balanceOf(address(this));  
+        if (BALBal > 0 || IBBal > 0 || OPBal > 0) {
+            chargeFees(BALBal, IBBal, OPBal);
             sendXCheese();
             addLiquidity();
             uint256 wantHarvested = balanceOfWant();
@@ -122,11 +125,15 @@ contract ibBPTComp  is FeeManager, Pausable {
     }
 
 // performance fees
-    function chargeFees(uint256 BALBal, uint256 IBBal) internal {
+    function chargeFees(uint256 BALBal, uint256 IBBal, uint256 OPBal) internal {
         //sells all the BAL to ETH
         if (BALBal > 0) {
             balancerSwap(BALPoolId, BAL, OP, BALBal);
             uint256 OPBal = IERC20(OP).balanceOf(address(this));
+            balancerSwap(OPPoolId, OP, WETH, OPBal);
+        }
+        //sells all OP to ETH if there were no BAL rewards
+        if (OPBal > 0 && BALBal == 0) {
             balancerSwap(OPPoolId, OP, WETH, OPBal);
         }
         //sells only enough IB to pay fees in in WETH -IB->rETH->WETH
@@ -152,12 +159,13 @@ contract ibBPTComp  is FeeManager, Pausable {
     }
     function sendXCheese() internal{
         uint256 _WETHBal = IERC20(WETH).balanceOf(address(this));
-        uint256 _rETHBal = IERC20(rETH).balanceOf(address(this));
         uint256 _XCheeseCut = _WETHBal.mul(xCheeseRate).div(100);
-        uint256 _XCheeseCutrETH = _rETHBal.mul(xCheeseRate).div(100);
-        balancerJoinRocket(_XCheeseCut, _XCHeeseCutrETH);
+        balancerJoinRocket(_XCheeseCut, 0);
         uint256 XCheese = IERC20(rETHBPT).balanceOf(address(this));
-        IERC20(rETHBPT).safeTransfer(xCheeseRecipient, XCheese);        
+        IERC20(rETHBPT).safeTransfer(xCheeseRecipient, XCheese); 
+        if (xCheeseContract != address(0)){
+            IxCheese(xCheeseContract).notifyRewardAmount();
+        }       
     }
 
 // Adds liquidity to AMM and gets more LP tokens.
@@ -175,7 +183,7 @@ contract ibBPTComp  is FeeManager, Pausable {
         IBalancerVault.SingleSwap memory singleSwap = IBalancerVault.SingleSwap(_poolId, swapKind, _tokenIn, _tokenOut, _amountIn, "");
         return IBalancerVault(bRouter).swap(singleSwap, funds, 0, block.timestamp);
     }
-    // balancer IFunctions
+// balancer IFunctions
 // tkns are ordered alphanumerically by contract addresses
     function balancerJoinRocket(uint256 _WETHIn, uint256 _rETHIn) internal {
         uint256[] memory amounts = new uint256[](2);
@@ -269,6 +277,7 @@ contract ibBPTComp  is FeeManager, Pausable {
     function setHarvestOnDeposit(bool _harvestOnDeposit) public onlyOwner {
         harvestOnDeposit = _harvestOnDeposit;
     }
+
 
     // SWEEPERS yup yup ser CEAZOR CAN TAKE IT ALL
     function inCaseTokensGetStuck(address _token, address _to, uint _amount) public onlyOwner {
