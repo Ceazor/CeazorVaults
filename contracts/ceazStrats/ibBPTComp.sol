@@ -42,6 +42,7 @@ contract ibBPTComp  is FeeManager, Pausable {
     bytes32 public OPPoolId = bytes32(0x39965c9dab5448482cf7e002f583c812ceb53046000100000000000000000003);
     bytes32 public rETHPoolId = bytes32(0x4fd63966879300cafafbb35d157dc5229278ed2300020000000000000000002b);
     bytes32 public IBPoolId = bytes32  (0x785f08fb77ec934c01736e30546f87b4daccbe50000200000000000000000041);
+    address public ceazrETHBPT = address (0x068D9D09DDC1Cf2b66A4C32eD74fFE68Db0b5f1B);
     
 
     IBalancerVault.SwapKind public swapKind;
@@ -161,8 +162,10 @@ contract ibBPTComp  is FeeManager, Pausable {
         uint256 _WETHBal = IERC20(WETH).balanceOf(address(this));
         uint256 _XCheeseCut = _WETHBal.mul(xCheeseRate).div(100);
         balancerJoinRocket(_XCheeseCut, 0);
-        uint256 XCheese = IERC20(rETHBPT).balanceOf(address(this));
-        IERC20(rETHBPT).safeTransfer(xCheeseRecipient, XCheese); 
+        uint256 rETHBPT = IERC20(rETHBPT).balanceOf(address(this));
+        ICeazor(ceazrETHBPT).depositAll(rETHBPT);
+        uint256 xCheese = IERC20(ceazrETHBPT).balanceOf(address(this));
+        IERC20(ceazrETHBPT).safeTransfer(xCheeseRecipient, XCheese); 
         if (xCheeseContract != address(0)){
             IxCheese(xCheeseContract).notifyRewardAmount();
         }       
@@ -291,6 +294,7 @@ contract ibBPTComp  is FeeManager, Pausable {
         IERC20(rETH).safeApprove(bRouter, type(uint256).max);
         IERC20(IB).safeApprove(bRouter, type(uint256).max);        
         IERC20(WETH).safeApprove(bRouter, type(uint256).max);
+        IERC20(rETHBPT).safeApprove(ceazrETHBPT, type(uint256).max);
     }
 
     function _removeAllowances() internal {
@@ -300,5 +304,6 @@ contract ibBPTComp  is FeeManager, Pausable {
         IERC20(rETH).safeApprove(bRouter, 0);
         IERC20(IB).safeApprove(bRouter, 0);
         IERC20(WETH).safeApprove(bRouter, 0);
+        IERC20(rETHBPT).safeApprove(ceazrETHBPT, 0);
     }
 }

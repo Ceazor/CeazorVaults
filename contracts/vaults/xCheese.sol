@@ -28,23 +28,24 @@ contract ExtraCheese is LPTokenWrapper, Ownable {
     uint256 public rewardRate = 0;
     uint256 public lastUpdateTime;
     uint256 public rewardPerTokenStored;
-    address public keeper; //preset to Gelato on Fantom
 
 
     mapping(address => uint256) public userRewardPerTokenPaid;
     mapping(address => uint256) public rewards;
+
+    address public strat;
 
     event RewardAdded(uint256 reward);
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
 
-    constructor(address _stakedToken, address _rewardToken, address _keeper)
+    constructor(address _stakedToken, address _rewardToken, address _strat)
         
         LPTokenWrapper(_stakedToken)
     {
         rewardToken = IERC20(_rewardToken);
-        keeper = _keeper;
+        strat = _strat;
     }
 
     modifier updateReward(address account) {
@@ -119,7 +120,7 @@ contract ExtraCheese is LPTokenWrapper, Ownable {
     function notifyRewardAmount() external
         updateReward(address(0))
     {
-        require(msg.sender == owner() || msg.sender == keeper, "only the key mastas can harvest");
+        require(msg.sender == owner() || msg.sender == strat, "only the key mastas can harvest");
         uint256 reward = IERC20(rewardToken).balanceOf(address(this));  // balance of tkns in contract now
         require(reward != 0, "you gotta fill'r up ser");                             // make sure not = 0
         rewardRate = reward.div(duration);                              
@@ -171,5 +172,8 @@ contract ExtraCheese is LPTokenWrapper, Ownable {
     }
     function setKeeper(address _keeper) external onlyOwner {
         keeper = _keeper;
+    }
+    function setStrat(address _strat) external onlyOwner {
+        strat = _strat;
     }
 }
