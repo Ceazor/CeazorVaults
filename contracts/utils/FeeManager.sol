@@ -51,7 +51,7 @@ abstract contract FeeManager is Ownable {
     function setxCheeseRecipient(address _address) public onlyOwner {
         xCheeseRecipient = _address;
     }
-    function setxCheeseContract(address _address) public onlyOwner{
+    function setxCheeseContract(address _address) public onlyOwner {
         xCheeseContract = _address;
         xCheeseRecipient = _address;
     }

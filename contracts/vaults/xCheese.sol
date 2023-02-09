@@ -11,11 +11,11 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "..//..//interfaces/LPTokenWrapper.sol";
+import "..//..//interfaces/IStrategy.sol";
 
 
 
 pragma solidity ^0.8.11;
-
 
 
 contract ExtraCheese is LPTokenWrapper, Ownable {
@@ -46,6 +46,7 @@ contract ExtraCheese is LPTokenWrapper, Ownable {
     {
         rewardToken = IERC20(_rewardToken);
         strat = _strat;
+        
     }
 
     modifier updateReward(address account) {
@@ -169,9 +170,6 @@ contract ExtraCheese is LPTokenWrapper, Ownable {
     // added this to avoide import error statements. from @openzeppelin3.0/contracts/utils/Context.sol
     function _msgSender() internal view virtual override returns (address) {
         return msg.sender;
-    }
-    function setKeeper(address _keeper) external onlyOwner {
-        keeper = _keeper;
     }
     function setStrat(address _strat) external onlyOwner {
         strat = _strat;

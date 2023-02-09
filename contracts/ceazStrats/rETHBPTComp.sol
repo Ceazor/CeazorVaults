@@ -90,13 +90,13 @@ contract rETHBPTComp  is FeeManager, Pausable {
         if (wantBal < _amount) {
             IBalancerGauge(gauge).withdraw(_amount.sub(wantBal), true);
             _amount = IERC20(want).balanceOf(address(this));
+            IERC20(want).safeTransfer(vault, _amount);
         }
 
         if (wantBal > _amount) {
-            _amount = _amount;
+            IERC20(want).safeTransfer(vault, _amount);
         }
 
-        IERC20(want).safeTransfer(vault, _amount);
         emit Withdraw(balanceOf());
     }
 

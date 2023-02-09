@@ -106,14 +106,14 @@ contract CRE8RelCoda is FeeManager, Pausable {
                 _amount.sub(wantBal),
                 address(this)
             );
-            wantBal = IERC20(want).balanceOf(address(this));
+            _amount = IERC20(want).balanceOf(address(this));
+            IERC20(want).safeTransfer(vault, _amount);
         }
 
         if (wantBal > _amount) {
-            wantBal = _amount;
+            IERC20(want).safeTransfer(vault, _amount);
         }
-
-        IERC20(want).safeTransfer(vault, wantBal);
+        
 
         emit Withdraw(balanceOf());
     }
@@ -161,8 +161,7 @@ contract CRE8RelCoda is FeeManager, Pausable {
             balancerJoinWithBeets(_XCheeseCut);
             wrapToFBeets();
             toCeazFBeets();
-            uint256 ceazForXCheese =
-                IERC20(ceazFBeets).balanceOf(address(this));
+            uint256 ceazForXCheese = IERC20(ceazFBeets).balanceOf(address(this));
             IERC20(ceazFBeets).safeTransfer(xCheeseRecipient, ceazForXCheese);
         }
         uint256 _beetsLeft = IERC20(Beets).balanceOf(address(this));
@@ -232,10 +231,9 @@ contract CRE8RelCoda is FeeManager, Pausable {
         bytes memory userData = abi.encode(1, amounts, 1);
 
         address[] memory tokens = new address[](2);
-        tokens[0] = USDC;
+        tokens[0] = wFTM;
         tokens[1] = Beets;
-        IBalancerVault.JoinPoolRequest memory request =
-            IBalancerVault.JoinPoolRequest(tokens, amounts, userData, false);
+        IBalancerVault.JoinPoolRequest memory request = IBalancerVault.JoinPoolRequest(tokens, amounts, userData, false);
         IBalancerVault(bRouter).joinPool(
             beetswFTMPoolId,
             address(this),
