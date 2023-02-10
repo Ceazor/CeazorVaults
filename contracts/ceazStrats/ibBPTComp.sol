@@ -27,16 +27,16 @@ contract ibBPTComp  is FeeManager, Pausable {
     address public rETH = address(0x9Bcef72be871e61ED4fBbc7630889beE758eb81D);
     address public BAL = address(0xFE8B128bA8C78aabC59d4c64cEE7fF28e9379921);
     address public OP = address(0x4200000000000000000000000000000000000042); 
-    address public want = address(0x785f08fb77ec934c01736e30546f87b4daccbe50); //ibBPT "galactic dragon"
+    address public want = address(0x785F08fB77ec934c01736E30546f87B4daccBe50); //ibBPT "galactic dragon"
     address public IB = address(0x00a35FD824c717879BF370E70AC6868b95870Dfb); // IB
-    address public rETHBPT = address(0x4fd63966879300cafafbb35d157dc5229278ed23);
+    address public rETHBPT = address(0x4Fd63966879300caFafBB35D157dC5229278Ed23);
     address[] public lpTokens;
 // Internal Varis    
     address public vault; 
 
 // Third party contracts
     address public bRouter = address(0xBA12222222228d8Ba445958a75a0704d566BF2C8);   // Beethoven Swap route (The VAULT) same on OP?
-    address public chef = address(0x3672884a609bFBb008ad9252A544F52dF6451A03);      //this is called a gauge on OP
+    address public gauge = address(0x1C438149E3e210233FCE91eeE1c097d34Fd655c2);      //this is called a gauge on OP
     address public helper = address(0x299dcDF14350999496204c141A0c20A29d71AF3E);     //just used for claim, pending()
     bytes32 public BALPoolId = bytes32(0xd6e5824b54f64ce6f1161210bc17eebffc77e031000100000000000000000006);    // to sell BAL.
     bytes32 public OPPoolId = bytes32(0x39965c9dab5448482cf7e002f583c812ceb53046000100000000000000000003);
@@ -60,7 +60,7 @@ contract ibBPTComp  is FeeManager, Pausable {
         address _vault             
     ) {  
         vault = _vault;        
-        (lpTokens,,) = IBalancerVault(bRouter).getPoolTokens(wantPoolId);
+        (lpTokens,,) = IBalancerVault(bRouter).getPoolTokens(IBPoolId);
         swapKind = IBalancerVault.SwapKind.GIVEN_IN;
         funds = IBalancerVault.FundManagement(address(this), false, payable(address(this)), false);
 
@@ -81,7 +81,7 @@ contract ibBPTComp  is FeeManager, Pausable {
         uint256 wantBal = IERC20(want).balanceOf(address(this));
 
         if (wantBal > 0) {
-            IBalancerGauge(chef).deposit(wantBal);
+            IBalancerGauge(gauge).deposit(wantBal);
             emit Deposit(balanceOf());
         }
     }
@@ -92,15 +92,15 @@ contract ibBPTComp  is FeeManager, Pausable {
         uint256 wantBal = IERC20(want).balanceOf(address(this));
 
         if (wantBal < _amount) {
-            IBalancerGauge(chef).withdraw(_amount.sub(wantBal), true);
-            wantBal = IERC20(want).balanceOf(address(this));
+            IBalancerGauge(gauge).withdraw(_amount.sub(wantBal), true);
+            _amount = IERC20(want).balanceOf(address(this));
         }
 
         if (wantBal > _amount) {
             _amount = _amount;
         }
 
-        IERC20(want).safeTransfer(vault, wantBal);
+        IERC20(want).safeTransfer(vault, _amount);
         emit Withdraw(balanceOf());
     }
 
@@ -109,7 +109,7 @@ contract ibBPTComp  is FeeManager, Pausable {
         _harvest();
     }
     function _harvest() internal whenNotPaused {
-        IBalancerGaugeHelper(helper).claimIBs(chef, address(this));
+        IBalancerGaugeHelper(helper).claimRewards(gauge, address(this));
         uint256 BALBal = IERC20(BAL).balanceOf(address(this));   
         uint256 IBBal = IERC20(IB).balanceOf(address(this)); 
         uint256 OPBal = IERC20(OP).balanceOf(address(this));  
@@ -130,8 +130,8 @@ contract ibBPTComp  is FeeManager, Pausable {
         //sells all the BAL to ETH
         if (BALBal > 0) {
             balancerSwap(BALPoolId, BAL, OP, BALBal);
-            uint256 OPBal = IERC20(OP).balanceOf(address(this));
-            balancerSwap(OPPoolId, OP, WETH, OPBal);
+            uint256 OPBalnow = IERC20(OP).balanceOf(address(this));
+            balancerSwap(OPPoolId, OP, WETH, OPBalnow);
         }
         //sells all OP to ETH if there were no BAL rewards
         if (OPBal > 0 && BALBal == 0) {
@@ -153,7 +153,7 @@ contract ibBPTComp  is FeeManager, Pausable {
         //sends fees
         uint256 strategistFee = WETHFees.mul(stratFee).div(MULTIPLIER);
         IERC20(WETH).safeTransfer(strategist, strategistFee);
-        uint256 perFeeAmount = WETHFee.sub(strategistFee);
+        uint256 perFeeAmount = WETHFees.sub(strategistFee);
         IERC20(WETH).safeTransfer(perFeeRecipient, perFeeAmount);  
 
 
@@ -162,10 +162,10 @@ contract ibBPTComp  is FeeManager, Pausable {
         uint256 _WETHBal = IERC20(WETH).balanceOf(address(this));
         uint256 _XCheeseCut = _WETHBal.mul(xCheeseRate).div(100);
         balancerJoinRocket(_XCheeseCut, 0);
-        uint256 rETHBPT = IERC20(rETHBPT).balanceOf(address(this));
-        ICeazor(ceazrETHBPT).depositAll(rETHBPT);
+        uint256 rETHBPTBal = IERC20(rETHBPT).balanceOf(address(this));
+        ICeazor(ceazrETHBPT).deposit(rETHBPTBal);
         uint256 xCheese = IERC20(ceazrETHBPT).balanceOf(address(this));
-        IERC20(ceazrETHBPT).safeTransfer(xCheeseRecipient, XCheese); 
+        IERC20(ceazrETHBPT).safeTransfer(xCheeseRecipient, xCheese); 
         if (xCheeseContract != address(0)){
             IxCheese(xCheeseContract).notifyRewardAmount();
         }       
@@ -174,10 +174,10 @@ contract ibBPTComp  is FeeManager, Pausable {
 // Adds liquidity to AMM and gets more LP tokens.
     function addLiquidity() internal {
         uint256 _WETHBAL = IERC20(WETH).balanceOf(address(this));
-        if(_WETHBal > 0){
-            balancerSwap(rETHPoolID, WETH, rETH, _WETHBal);
+        if(_WETHBAL > 0){
+            balancerSwap(rETHPoolId, WETH, rETH, _WETHBAL);
         }
-        uint256 rETHIn = IERC20(rETH).balanceOf(address(this));
+        uint256 _rETHIn = IERC20(rETH).balanceOf(address(this));
         uint256 _IBIn = IERC20(IB).balanceOf(address(this));
         balancerJoinWithBoth(_IBIn, _rETHIn);
     }
@@ -204,15 +204,15 @@ contract ibBPTComp  is FeeManager, Pausable {
             false);
         IBalancerVault(bRouter).joinPool(rETHPoolId, address(this), address(this), request);
     }
-    function balancerJoinWithBoth(uint256 _IBIn, uint256 _WETHIn) internal {    
+    function balancerJoinWithBoth(uint256 _IBIn, uint256 _rETHIn) internal {    
 
         uint256[] memory amounts = new uint256[](2);
-        amounts[1] = _WETHIn;
+        amounts[1] = _rETHIn;
         amounts[0] = _IBIn;
         bytes memory userData = abi.encode(1, amounts, 1);
 
         address[] memory tokens = new address[](2);
-        tokens[1] = WETH;
+        tokens[1] = rETH;
         tokens[0] = IB;
         IBalancerVault.JoinPoolRequest memory request = IBalancerVault.JoinPoolRequest(
             tokens, 
@@ -233,7 +233,7 @@ contract ibBPTComp  is FeeManager, Pausable {
 
     // it calculates how much 'want' the strategy has working in the farm.
     function balanceOfPool() public view returns (uint256) {
-        uint256 _amount = IBalancerGauge(chef).balanceOf(address(this));
+        uint256 _amount = IBalancerGauge(gauge).balanceOf(address(this));
         return _amount;
     }
 
@@ -241,8 +241,8 @@ contract ibBPTComp  is FeeManager, Pausable {
     function retireStrat() external {
         require(msg.sender == vault, "anon, you not the vault!"); //makes sure that only the vault can retire a strat
         _harvest();
-        uint256 allWant = IBalancerGauge(chef).balanceOf(address(this));
-        IBalancerGauge(chef).withdraw(allWant);
+        uint256 allWant = IBalancerGauge(gauge).balanceOf(address(this));
+        IBalancerGauge(gauge).withdraw(allWant);
         uint256 wantBal = IERC20(want).balanceOf(address(this));
         IERC20(want).transfer(vault, wantBal);
     }
@@ -250,14 +250,14 @@ contract ibBPTComp  is FeeManager, Pausable {
     // pauses deposits and withdraws all funds from third party systems.
     function panic() public onlyOwner {
         pause();
-        uint256 allWant = IBalancerGauge(chef).balanceOf(address(this));
-        IBalancerGauge(chef).withdraw(allWant);
+        uint256 allWant = IBalancerGauge(gauge).balanceOf(address(this));
+        IBalancerGauge(gauge).withdraw(allWant);
             }
     // pauses deposits and withdraws all funds from third party systems and returns funds to vault.
     function bigPanic() public onlyOwner {
         pause();
-        uint256 allWant = IBalancerGauge(chef).balanceOf(address(this));
-        IBalancerGauge(chef).withdraw(allWant);
+        uint256 allWant = IBalancerGauge(gauge).balanceOf(address(this));
+        IBalancerGauge(gauge).withdraw(allWant);
         uint256 wantBal = IERC20(want).balanceOf(address(this));
         IERC20(want).transfer(vault, wantBal);
     }
@@ -288,7 +288,7 @@ contract ibBPTComp  is FeeManager, Pausable {
     }
 
     function _giveAllowances() internal {
-        IERC20(want).safeApprove(chef, type(uint256).max);
+        IERC20(want).safeApprove(gauge, type(uint256).max);
         IERC20(BAL).safeApprove(bRouter, type(uint256).max);
         IERC20(OP).safeApprove(bRouter, type(uint256).max);
         IERC20(rETH).safeApprove(bRouter, type(uint256).max);
@@ -298,7 +298,7 @@ contract ibBPTComp  is FeeManager, Pausable {
     }
 
     function _removeAllowances() internal {
-        IERC20(want).safeApprove(chef, 0);
+        IERC20(want).safeApprove(gauge, 0);
         IERC20(BAL).safeApprove(bRouter, 0);
         IERC20(OP).safeApprove(bRouter, 0);
         IERC20(rETH).safeApprove(bRouter, 0);
