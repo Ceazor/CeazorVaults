@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 pragma solidity ^0.8.11;
 
 abstract contract FeeManager is Ownable {
-    uint256 public constant MAX_STRATEGIST_FEE = 100;
+    uint256 public constant MAX_STRATEGIST_FEE = 500;
     uint256 public constant MAX_TOTAL_FEE = 500;
     uint256 public constant MULTIPLIER = 1000;
 

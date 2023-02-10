@@ -18,7 +18,7 @@ gauge = Contract("0x1C438149E3e210233FCE91eeE1c097d34Fd655c2")
 ceazrETHBPT = Contract("0x068D9D09DDC1Cf2b66A4C32eD74fFE68Db0b5f1B")
 
 vault = CeazorVaultR.deploy(want, 'GalacticDragonCompounder', 'ceazIBBPT', {'from': owner})
-strat = ibBPTComp.deploy(vault, {'from': owner})
+vault.initialize(strat, {'from': owner})
 vault.addFren(ceazor, {'from': owner})
 ceazrETHBPT.addFren(strat, {'from': owner})
 
