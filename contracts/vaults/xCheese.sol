@@ -23,7 +23,7 @@ contract ExtraCheese is LPTokenWrapper, Ownable {
     using SafeMath for uint256;
 
     IERC20 public rewardToken;
-    uint256 public duration = 2628288; //Preset to 1month;
+    uint256 public duration = 604800; //Preset to 1week;
     uint256 public periodFinish = 0;
     uint256 public rewardRate = 0;
     uint256 public lastUpdateTime;
@@ -171,6 +171,7 @@ contract ExtraCheese is LPTokenWrapper, Ownable {
     function _msgSender() internal view virtual override returns (address) {
         return msg.sender;
     }
+    //this allows the strategy to be set so so that it can be permitted to call NotifyRewardAmount()
     function setStrat(address _strat) external onlyOwner {
         strat = _strat;
     }
