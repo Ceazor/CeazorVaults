@@ -4,7 +4,7 @@ ceazor = ("0x3c5Aac016EF2F178e8699D6208796A2D67557fe2")
 
 
 ## CRE8R:USDC CRE8R al Coda on FTM
-vault = Contract("0x068D9D09DDC1Cf2b66A4C32eD74fFE68Db0b5f1B")
+ceazCRE8RCoda = Contract("0x068D9D09DDC1Cf2b66A4C32eD74fFE68Db0b5f1B")
 strat = Contract("0x7fF9e32C4D8359b19b7269220E73fb12Afa300C9")
 owner => vault, strat
 addFren(
