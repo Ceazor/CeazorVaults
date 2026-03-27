@@ -4,7 +4,8 @@
     "@commitlint/cli": "^11.0.0",
     "@commitlint/config-conventional": "^11.0.0",
     "ethlint": "^1.2.5",
-    "husky": "^4.3.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^13.1.0",
     "prettier": "^2.1.2",
     "prettier-plugin-solidity": "^1.0.0-alpha.57",
     "pretty-quick": "^3.0.2"
@@ -19,5 +20,8 @@
       "pre-commit": "yarn lint:fix",
       "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
     }
+  },
+  "dependencies": {
+    "@eth-optimism/ganache-cli": "^6.11.1"
   }
 }

@@ -11,11 +11,11 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "..//..//interfaces/LPTokenWrapper.sol";
+import "..//..//interfaces/IStrategy.sol";
 
 
 
 pragma solidity ^0.8.11;
-
 
 
 contract ExtraCheese is LPTokenWrapper, Ownable {
@@ -23,27 +23,30 @@ contract ExtraCheese is LPTokenWrapper, Ownable {
     using SafeMath for uint256;
 
     IERC20 public rewardToken;
-    uint256 public duration = 2628288; //Preset to 1month;
+    uint256 public duration = 604800; //Preset to 1week;
     uint256 public periodFinish = 0;
     uint256 public rewardRate = 0;
     uint256 public lastUpdateTime;
     uint256 public rewardPerTokenStored;
-    address public keeper = address(0x6EDe1597c05A0ca77031cBA43Ab887ccf24cd7e8); //preset to Gelato on Fantom
 
 
     mapping(address => uint256) public userRewardPerTokenPaid;
     mapping(address => uint256) public rewards;
+
+    address public strat;
 
     event RewardAdded(uint256 reward);
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
 
-    constructor(address _stakedToken, address _rewardToken)
+    constructor(address _stakedToken, address _rewardToken, address _strat)
         
         LPTokenWrapper(_stakedToken)
     {
         rewardToken = IERC20(_rewardToken);
+        strat = _strat;
+        
     }
 
     modifier updateReward(address account) {
@@ -118,7 +121,7 @@ contract ExtraCheese is LPTokenWrapper, Ownable {
     function notifyRewardAmount() external
         updateReward(address(0))
     {
-        require(msg.sender == owner() || msg.sender == keeper, "only the key mastas can harvest");
+        require(msg.sender == owner() || msg.sender == strat, "only the key mastas can harvest");
         uint256 reward = IERC20(rewardToken).balanceOf(address(this));  // balance of tkns in contract now
         require(reward != 0, "you gotta fill'r up ser");                             // make sure not = 0
         rewardRate = reward.div(duration);                              
@@ -168,7 +171,8 @@ contract ExtraCheese is LPTokenWrapper, Ownable {
     function _msgSender() internal view virtual override returns (address) {
         return msg.sender;
     }
-    function setKeeper(address _keeper) external onlyOwner {
-        keeper = _keeper;
+    //this allows the strategy to be set so so that it can be permitted to call NotifyRewardAmount()
+    function setStrat(address _strat) external onlyOwner {
+        strat = _strat;
     }
 }
